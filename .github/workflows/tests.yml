@@ -1,0 +1,83 @@
+name: tests
+
+# The point of this workflow is narrow and important: every published number
+# in this repository is re-derived on every push. The legacy notebooks stored
+# zero cell outputs, so before this suite existed the campaign was
+# unreproducible by anyone but its author, on a Kaggle kernel that no longer
+# exists. If a headline figure ever stops reproducing, this fails.
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: pytest (py${{ matrix.python-version }}, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.11", "3.12", "3.13"]
+        include:
+          # The campaign was developed on Windows; keep one Windows job so
+          # platform-specific breakage (paths, encodings) surfaces here rather
+          # than on the author's laptop.
+          - os: windows-latest
+            python-version: "3.12"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install package and test extras
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev,app]"
+
+      - name: Show scientific stack versions
+        # SciPy minor versions can move least_squares stopping points at the
+        # last digit. When a regression fails, this is the first thing to check.
+        run: |
+          python -c "import numpy, scipy, pandas, sys; print(sys.version); print('numpy', numpy.__version__); print('scipy', scipy.__version__); print('pandas', pandas.__version__)"
+
+      - name: Run the full regression suite
+        run: python -m pytest -v --durations=15
+
+  confidentiality:
+    name: confidentiality sweep
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # NOTE: the name-based check deliberately does NOT live here.
+      #
+      # A public workflow file listing the terms to be excluded would publish
+      # those terms -- a signpost pointing at exactly what is being protected,
+      # which is worse than no check at all. The name list stays local, in a
+      # gitignored file, enforced by a pre-commit hook: `python scripts/install_hooks.py`.
+      #
+      # What CI can check without naming anything is structural: that the
+      # directories holding sensitive material are not tracked.
+
+      - name: Fail if legacy or private material is tracked
+        run: |
+          set -euo pipefail
+          if git ls-files | grep -E '^(legacy_|field/|private/|data/real/)|\.pptx$|CoreField_Transformer_Package_.*\.zip$'; then
+            echo "::error::Legacy or private material is tracked. These paths are gitignored for confidentiality reasons; do not force-add them."
+            exit 1
+          fi
+          echo "No legacy or private material tracked."

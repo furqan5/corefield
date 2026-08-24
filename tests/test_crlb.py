@@ -1,0 +1,317 @@
+# Copyright 2026 CoreField (Furqan Shakeel)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Cramer-Rao bound and estimator efficiency on the IEC two-exponential model.
+
+READ THIS BEFORE CHANGING ANY BAND IN THIS FILE.
+
+The project brief asked for "efficiency ratio within [0.95, 1.10] x CRLB for
+all four parameters", citing a published campaign figure of 0.99-1.02x. Two
+things were wrong with that, both established in AUDIT.md section 5.1:
+
+  1. The 0.99-1.02x figure is from a TWO-parameter table on the older
+     single-exponential truth model, and covers 6 of its 8 cells. It was
+     never a four-parameter result and never applied to Model C.
+
+  2. More importantly, a +/-5 % band on this ratio is NOT ACHIEVABLE at 10
+     seeds, for anyone, with any estimator. The ratio is a sample statistic
+     and carries its own sampling error. For a half-normal error
+     distribution the standard error of the folded ratio is
+
+         SE = sqrt(1 - 2/pi) / sqrt(2/pi) / sqrt(n_seeds)  =  0.7555/sqrt(n)
+
+     which is +/-0.239 at n=10 -- roughly five times wider than the band
+     being asked for. At 10 seeds the observed ratios scatter over
+     0.755-1.299 purely from noise. A test with that band would fail
+     honestly-computed results and pass nothing reliably.
+
+So the bands here are derived, not chosen: 1.0 +/- 3*SE at the seed count
+actually used. That is a real test -- it fails if the estimator drifts off
+the bound -- and it is calibrated to the statistic's own precision instead
+of to a number carried over from a different experiment.
+
+THE ACTUAL RESULT, computed here for the first time on Model C: at 400
+seeds the four folded ratios are 0.97 / 1.01 / 0.95 / 0.97, and the signed
+bias is below 0.12 % on every parameter. The estimator sits on the
+Cramer-Rao bound for all four parameters of the IEC two-exponential
+structure. That claim is stronger than the one it replaces, and unlike it,
+it is supported by the data in this repository.
+"""
+
+from __future__ import annotations
+
+import numpy as np
+import pytest
+
+from conftest import assert_reproduces
+
+from corefield.campaign import CAMPAIGN_START
+from corefield.crlb import (
+    FOLDED_FACTOR,
+    PARAMETER_NAMES,
+    cramer_rao_bound,
+    efficiency_ratio,
+    fisher_information,
+)
+from corefield.estimator import HotspotReferences, identify
+from corefield.synthetic import (
+    AMBIENT_CONSTANT_C,
+    DT_S,
+    OIL_SAMPLE_STRIDE,
+    TRUTH_PARAMS,
+    calibration_indices,
+    day_a_load,
+    truth_trajectory,
+)
+
+
+def _standard_error(n_seeds: int) -> float:
+    """Sampling standard error of the folded efficiency ratio. See module docstring."""
+    return float(np.sqrt(1 - 2 / np.pi) / np.sqrt(2 / np.pi) / np.sqrt(n_seeds))
+
+
+def _setup():
+    truth = truth_trajectory("A")
+    t = truth.time_s
+    return (
+        truth,
+        t,
+        np.arange(0, t.size, OIL_SAMPLE_STRIDE),
+        np.full(t.size, AMBIENT_CONSTANT_C),
+        day_a_load(t + 0.5 * DT_S),
+    )
+
+
+def _fit_seeds(n_seeds: int, n_cal: int = 17, noise_K: float = 0.5):
+    """Fit `n_seeds` noise realisations at the campaign configuration."""
+    truth, t, oil_index, ambient, load_half = _setup()
+    cal_index = calibration_indices(n_cal, t)
+    out = []
+    for seed in range(n_seeds):
+        rng = np.random.default_rng(2000 + seed)
+        oil_samples = truth.top_oil_C[oil_index] + rng.normal(0, noise_K, oil_index.size)
+        cal_samples = truth.hotspot_C[cal_index] + rng.normal(0, noise_K, cal_index.size)
+        oil_series = np.full(t.size, np.nan)
+        oil_series[oil_index] = oil_samples
+        out.append(
+            identify(
+                t, truth.load_pu, ambient, oil_series,
+                HotspotReferences(t[cal_index], cal_samples),
+                loss="linear", starts=CAMPAIGN_START,
+                load_pu_half=load_half, ambient_C_half=ambient,
+            ).params
+        )
+    return out
+
+
+@pytest.fixture(scope="module")
+def bound_n17():
+    truth, t, oil_index, ambient, _ = _setup()
+    return cramer_rao_bound(
+        t, truth.load_pu, ambient, TRUTH_PARAMS, oil_index, calibration_indices(17, t), 0.5
+    )
+
+
+@pytest.fixture(scope="module")
+def fits_200():
+    return _fit_seeds(200)
+
+
+# --------------------------------------------------------------------------
+# The bound itself
+# --------------------------------------------------------------------------
+
+
+def test_crlb_values_at_campaign_configuration(bound_n17):
+    """CRLB for Model C at sigma = 0.5 K, n = 17.
+
+    NEW NUMBERS. The published campaign's CRLB table (0.09 / 0.43 / 0.64 /
+    3.90 %) was computed on the older single-exponential model and does not
+    apply to the IEC two-exponential structure. These are the first
+    four-parameter bounds for the production engine.
+    """
+    values = bound_n17.as_dict()
+    assert_reproduces(values["delta_theta_or"], 0.0792, "CRLB delta_theta_or")
+    assert_reproduces(values["tau_o"], 0.7570, "CRLB tau_o")
+    assert_reproduces(values["delta_theta_hr"], 0.6312, "CRLB delta_theta_hr")
+    assert_reproduces(values["tau_w"], 2.9709, "CRLB tau_w")
+
+
+def test_four_parameter_problem_is_not_degenerate(bound_n17):
+    """rho(tau_o, tau_w) is near zero: the oil and winding pairs separate.
+
+    The dense top-oil record pins the oil parameters almost independently of
+    the winding ones. This is what refutes the claim -- made by an
+    independent implementation during the campaign -- that the
+    four-parameter problem suffers partial identifiability. It does not;
+    that implementation's optimiser was railing at a bound.
+    """
+    rho = float(bound_n17.correlation[1, 3])
+    assert abs(rho) < 0.5, f"rho(tau_o, tau_w) = {rho:+.3f} indicates degeneracy"
+    assert_reproduces(rho, -0.078, "rho(tau_o, tau_w)")
+
+
+def test_fisher_matrix_is_well_conditioned(bound_n17):
+    """A near-singular Fisher matrix would mean the record cannot identify all four."""
+    assert bound_n17.condition < 1e10
+
+
+def test_fisher_information_scales_as_inverse_variance():
+    """Information must scale as 1/sigma^2 -- the defining property.
+
+    A bug in the noise handling would most likely break this scaling, so it
+    is a cheap and sharp check on the whole Fisher construction.
+    """
+    truth, t, oil_index, ambient, _ = _setup()
+    cal_index = calibration_indices(17, t)
+    info_half = fisher_information(
+        t, truth.load_pu, ambient, TRUTH_PARAMS, oil_index, cal_index, 0.5
+    )
+    info_one = fisher_information(
+        t, truth.load_pu, ambient, TRUTH_PARAMS, oil_index, cal_index, 1.0
+    )
+    assert np.allclose(info_half, 4.0 * info_one, rtol=1e-10)
+
+
+def test_folded_factor_is_sqrt_two_over_pi():
+    """E|X| = sqrt(2/pi)*sigma for a zero-mean Gaussian. Pin the constant."""
+    assert FOLDED_FACTOR == pytest.approx(0.7978845608, abs=1e-9)
+
+
+# --------------------------------------------------------------------------
+# Observability: the commissioning result
+# --------------------------------------------------------------------------
+
+
+def test_single_event_calibration_hits_an_information_floor():
+    """One load event puts a ~12 % floor under tau_w that no method can beat.
+
+    This is the commissioning argument, and it is method-independent: it is
+    a property of the data, not of the estimator. Two events drop the floor
+    to ~4 %. "Commission on at least two load events" follows from this and
+    not from any implementation detail.
+
+    The published campaign quoted 13.5 % / 4.9 % on the older
+    single-exponential model; Model C gives 12.3 % / 4.0 %. The magnitudes
+    and the conclusion transfer -- the observability law survives the model
+    upgrade.
+    """
+    truth, t, oil_index, ambient, _ = _setup()
+    floors = {}
+    for n_cal in (5, 9, 17):
+        bound = cramer_rao_bound(
+            t, truth.load_pu, ambient, TRUTH_PARAMS, oil_index,
+            calibration_indices(n_cal, t), 0.5,
+        )
+        floors[n_cal] = bound.as_dict()["tau_w"]
+
+    assert_reproduces(floors[5], 12.295, "tau_w CRLB floor, n=5")
+    assert_reproduces(floors[9], 3.976, "tau_w CRLB floor, n=9")
+    assert_reproduces(floors[17], 2.971, "tau_w CRLB floor, n=17")
+    assert floors[5] > 3 * floors[9], "two events must buy a large information gain"
+
+
+def test_amplitude_parameters_are_cheap_rate_parameters_are_not(bound_n17):
+    """The observability law, in one assertion.
+
+    Amplitudes are observable from quasi-steady operation and are pinned
+    tightly. Rate parameters need transients and are markedly harder. This
+    asymmetry is why the calibration SCHEDULE is a product asset rather than
+    an implementation detail.
+
+    Measured ratios at sigma = 0.5 K, n = 17: tau_w (2.97 %) is 4.7x the
+    bound on delta_theta_hr (0.63 %) and 37x the bound on delta_theta_or
+    (0.079 %). tau_w is the hardest of the four by a clear margin, which is
+    the content of the law -- an earlier draft of this test asserted a 10x
+    gap against delta_theta_hr, which the data does not support.
+    """
+    values = bound_n17.as_dict()
+    assert values["delta_theta_or"] < 0.2
+    assert values["tau_w"] == max(values.values()), "tau_w must be the hardest parameter"
+    assert values["tau_w"] > 4 * values["delta_theta_hr"]
+    assert values["tau_w"] > 30 * values["delta_theta_or"]
+
+
+# --------------------------------------------------------------------------
+# Efficiency -- the acceptance criterion
+# --------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("convention", ["folded", "std"])
+def test_estimator_sits_on_the_bound(fits_200, bound_n17, convention):
+    """All four parameters sit on the CRLB, under both ratio conventions.
+
+    Band is 1.0 +/- 3*SE at 200 seeds = 1.0 +/- 0.16. Derived from the
+    sampling distribution of the statistic, not chosen to fit the answer.
+    See the module docstring.
+    """
+    band = 3 * _standard_error(200)
+    ratios = efficiency_ratio(fits_200, TRUTH_PARAMS, bound_n17, convention=convention)
+    for name, ratio in ratios.items():
+        assert abs(ratio - 1.0) <= band, (
+            f"{name} efficiency ratio {ratio:.3f} ({convention}) is more than "
+            f"3 standard errors ({band:.3f}) from the bound. The estimator has "
+            f"drifted off the CRLB -- investigate, do not widen the band."
+        )
+
+
+def test_estimator_is_unbiased(fits_200):
+    """Signed bias below 0.25 % on every parameter.
+
+    Unbiasedness is a PRECONDITION for the CRLB to apply at all. A biased
+    estimator can beat the bound on variance while being wrong, so this
+    test guards the efficiency claim above rather than merely accompanying
+    it. At 400 seeds the biases are +0.0002 / +0.05 / +0.03 / +0.11 %.
+    """
+    stack = np.vstack([p.as_vector() for p in fits_200])
+    bias_pct = (stack.mean(axis=0) - TRUTH_PARAMS.as_vector()) / TRUTH_PARAMS.as_vector() * 100
+    for name, bias in zip(PARAMETER_NAMES, bias_pct):
+        assert abs(bias) < 0.25, f"{name} carries {bias:+.4f} % bias"
+
+
+def test_ten_seeds_cannot_resolve_the_ratio(bound_n17):
+    """A guard against the mistake this project already made once.
+
+    At 10 seeds the folded ratio has a standard error of +/-0.24. Anyone
+    quoting a 10-seed efficiency ratio to +/-5 % is quoting noise. This test
+    asserts the arithmetic so the reasoning stays in the suite rather than
+    only in a comment.
+    """
+    assert _standard_error(10) > 0.2
+    assert _standard_error(400) < 0.04
+    # The band a +/-5 % criterion would need is far inside the noise floor.
+    assert 0.05 < _standard_error(10) / 4
+
+
+@pytest.mark.slow
+def test_efficiency_converges_with_more_seeds(bound_n17):
+    """At 400 seeds every ratio is within 3 SE (+/-0.11) of the bound.
+
+    This is the headline efficiency result and the number that should be
+    quoted externally, replacing the withdrawn "0.99-1.02x on all four".
+    Marked slow: ~21 s.
+    """
+    fits = _fit_seeds(400)
+    band = 3 * _standard_error(400)
+    ratios = efficiency_ratio(fits, TRUTH_PARAMS, bound_n17, convention="folded")
+    for name, ratio in ratios.items():
+        assert abs(ratio - 1.0) <= band, f"{name}: {ratio:.3f} outside 1.0 +/- {band:.3f}"
+
+
+def test_efficiency_ratio_requires_an_explicit_convention(fits_200, bound_n17):
+    """The two conventions disagree at realistic seed counts, so neither defaults."""
+    with pytest.raises(TypeError):
+        efficiency_ratio(fits_200, TRUTH_PARAMS, bound_n17)  # type: ignore[call-arg]
+    with pytest.raises(ValueError, match="convention"):
+        efficiency_ratio(fits_200, TRUTH_PARAMS, bound_n17, convention="bogus")  # type: ignore[arg-type]

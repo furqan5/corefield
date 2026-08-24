@@ -1,0 +1,102 @@
+# =========================================================================
+# CONFIDENTIALITY — these entries are not housekeeping.
+#
+# The legacy material in this working directory names the pilot host's
+# employer and job title. Per CLAUDE.md that must never appear in this
+# repository, in commit messages, in issues, or in any generated document.
+# These files stay on local disk as the provenance record; they do not go
+# into version control.
+#
+# Do not remove an entry from this block without an explicit decision.
+# =========================================================================
+field/
+private/
+data/real/
+legacy_notebooks/
+legacy_methods/
+*.pptx
+CoreField_Transformer_Package_*.zip
+AUDIT.md
+MANIFEST.md
+
+# Internal working instructions. Excluded not because it names anyone -- it
+# does not -- but because it states that a confidential pilot exists and that
+# identifying detail was removed. Published alongside a founder location, that
+# is a pointer to the party being protected. Keep it local.
+CLAUDE.md
+
+# The pre-commit hook's term list. Gitignored on purpose: a committed list of
+# terms-to-exclude would publish the very terms it protects. See
+# scripts/install_hooks.py.
+.confidential-terms
+*.pre-corefield.bak
+
+# Real telemetry never enters the repo. Templates are the one exception:
+# a blank column header file is what a utility engineer gets handed.
+*.csv
+!**/templates/*.csv
+!**/*_template.csv
+
+# -------------------------------------------------------------------------
+# Standard Python
+# -------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Testing and coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+
+# Type checkers / linters
+.mypy_cache/
+.dmypy.json
+.ruff_cache/
+
+# Notebooks
+.ipynb_checkpoints/
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Generated artefacts
+*.npz
+*.png
+!docs/**/*.png
