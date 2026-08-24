@@ -51,6 +51,35 @@ XLIM = (56, 126)
 PROBES = (0.80, 0.95)
 
 
+def _assert_labels_inside_axes(fig, labelled) -> None:
+    """Fail if any in-plot label spills outside its axes.
+
+    Matplotlib places text at data coordinates without checking whether the
+    rendered glyphs fit, so a label anchored near an axis limit silently
+    overflows the spine. That is easy to miss when reviewing a thumbnail and
+    embarrassing once published, so it is checked rather than eyeballed.
+
+    Only labels this script adds inside the plot area are checked; tick
+    labels, axis labels and titles live outside the axes by design.
+    """
+    fig.canvas.draw()
+    for ax, artist, name in labelled:
+        box = artist.get_window_extent(fig.canvas.get_renderer())
+        frame = ax.get_window_extent()
+        if not (
+            box.x0 >= frame.x0 - 0.5
+            and box.x1 <= frame.x1 + 0.5
+            and box.y0 >= frame.y0 - 0.5
+            and box.y1 <= frame.y1 + 0.5
+        ):
+            raise AssertionError(
+                f"label {name!r} is drawn outside its axes "
+                f"(text spans x {box.x0:.0f}-{box.x1:.0f}, y {box.y0:.0f}-{box.y1:.0f}; "
+                f"axes spans x {frame.x0:.0f}-{frame.x1:.0f}, "
+                f"y {frame.y0:.0f}-{frame.y1:.0f}). Move it into clear space."
+            )
+
+
 def render(destination: Path) -> Path:
     """Draw the figure and write it to `destination`."""
     model = AxialWindingModel()
@@ -75,6 +104,8 @@ def render(destination: Path) -> Path:
     fig.text(0.5, 0.918, "The sensor outside the tank reads the same number.",
              ha="center", fontsize=18.5, color="#C1440E", fontweight="bold")
 
+    labelled: list = []
+
     for x0, location, colour, title in [
         (0.115, LOW, "#2E7D32", "Hot spot near the BOTTOM"),
         (0.545, HIGH, "#C1440E", "Hot spot near the TOP"),
@@ -94,21 +125,26 @@ def render(destination: Path) -> Path:
         # Place the label in space the curve does not occupy: right of the
         # curve when the hot spot is low, left of it when high.
         tx, tz = (px + 3.0, pz + 0.34) if location < 0.5 else (at(winding, 0.62) - 20.0, 0.60)
-        ax.annotate("hot spot", xy=(px, pz), xytext=(tx, tz), fontsize=13,
-                    fontweight="bold", color=colour, ha="left", va="center",
-                    arrowprops=dict(arrowstyle="-|>", color=colour, lw=2.0,
-                                    shrinkA=6, shrinkB=8), zorder=6)
+        labelled.append((ax, ax.annotate(
+            "hot spot", xy=(px, pz), xytext=(tx, tz), fontsize=13,
+            fontweight="bold", color=colour, ha="left", va="center",
+            arrowprops=dict(arrowstyle="-|>", color=colour, lw=2.0,
+                            shrinkA=6, shrinkB=8), zorder=6), "hot spot"))
 
         ax.plot([reading], [1.0], "o", ms=12, mfc="white", mec="#111111", mew=2.6, zorder=6)
-        ax.annotate("top-oil\nsensor", xy=(reading, 1.0), xytext=(reading - 20, 0.80),
-                    fontsize=11.5, fontweight="bold", color="#111111", ha="center",
-                    linespacing=1.3,
-                    arrowprops=dict(arrowstyle="-|>", color="#111111", lw=1.7,
-                                    shrinkA=4, shrinkB=7), zorder=7)
+        # Label sits ABOVE the marker. Placing it to the left overflowed the
+        # y-axis spine, because the text is centred on the sensor's x-value
+        # and the axis starts only a couple of degrees to its left.
+        labelled.append((ax, ax.annotate(
+            "top-oil sensor", xy=(reading, 1.0), xytext=(reading, 1.16),
+            fontsize=12, fontweight="bold", color="#111111",
+            ha="center", va="center",
+            arrowprops=dict(arrowstyle="-|>", color="#111111", lw=1.7,
+                            shrinkA=5, shrinkB=7), zorder=7), "top-oil sensor"))
 
         ax.set_title(title, fontsize=14.5, fontweight="bold", color="#333333", pad=11)
         ax.set_xlim(*XLIM)
-        ax.set_ylim(-0.04, 1.12)
+        ax.set_ylim(-0.04, 1.26)
         ax.set_yticks([0, 0.5, 1.0], ["bottom", "mid", "top"], fontsize=12)
         ax.tick_params(axis="x", labelsize=11.5)
         ax.set_xlabel("temperature  [\u00b0C]", fontsize=12.5, labelpad=6)
@@ -119,10 +155,12 @@ def render(destination: Path) -> Path:
             ax.set_yticklabels([])
         else:
             ax.set_ylabel("height up the winding", fontsize=12.5, labelpad=8)
-            ax.text(at(oil, 0.44) - 7.5, 0.44, "oil", fontsize=12, color="#5B6B7A",
-                    fontweight="bold", rotation=66, va="center")
-            ax.text(at(winding, 0.80) + 3.5, 0.80, "winding", fontsize=12,
-                    color=colour, fontweight="bold", va="center")
+            labelled.append((ax, ax.text(
+                at(oil, 0.44) - 7.5, 0.44, "oil", fontsize=12, color="#5B6B7A",
+                fontweight="bold", rotation=66, va="center"), "oil"))
+            labelled.append((ax, ax.text(
+                at(winding, 0.80) + 3.5, 0.80, "winding", fontsize=12,
+                color=colour, fontweight="bold", va="center"), "winding"))
 
     for centre in (0.293, 0.723):
         fig.text(centre, 0.338, "top-oil sensor reads", ha="center",
@@ -148,6 +186,8 @@ def render(destination: Path) -> Path:
              f"\u00b1 {internal.std_percent_of_height:.2f}%"
              f"     \u00b7     1-D axial model, synthetic     \u00b7     CoreField",
              ha="center", fontsize=11.5, color="#666666")
+
+    _assert_labels_inside_axes(fig, labelled)
 
     destination.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(destination, dpi=120, facecolor="white")
