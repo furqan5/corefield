@@ -1,0 +1,25 @@
+# Normalise line endings so that a collaborator on another platform does not
+# produce a diff touching every line of every file. Git stores LF; Windows
+# working copies get CRLF on checkout.
+* text=auto eol=lf
+
+# Windows-native files keep CRLF in the working tree.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Shell scripts and hooks must be LF even on Windows, or the shebang breaks.
+*.sh text eol=lf
+
+# Licence texts are fetched verbatim from their canonical sources. Marking
+# them binary keeps git from normalising a legal document.
+LICENSE -text
+LICENSE-docs -text
+
+# Never normalise these.
+*.png binary
+*.jpg binary
+*.pdf binary
+*.xlsx binary
+*.pptx binary
+*.zip binary
+*.npz binary
