@@ -10,8 +10,14 @@ answer the question that carries commercial value: **how much extra load can thi
 carry, and for how long?**
 
 Those four parameters are the ones the standard says can otherwise only be obtained from a
-prolonged heat-run test on a transformer fitted with fibre-optic sensors — which no utility
-has for its installed fleet.
+prolonged heat-run test on a transformer fitted with fibre-optic sensors.
+
+**This is a complement to that test, not a replacement for it.** For a new transformer the
+heat-run is part of procurement verification and characterises the unit as built. What it cannot
+do is follow what the unit has *become* after twenty years of service, and it was never performed
+at all on most of the installed fleet. Those two cases — the aged unit and the undocumented one —
+are what this addresses. The framing was corrected on the advice of a reviewer who builds thermal
+models for a transmission operator; the earlier "replaces the heat-run test" was overreach.
 
 ---
 

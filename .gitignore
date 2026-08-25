@@ -100,3 +100,27 @@ desktop.ini
 *.npz
 *.png
 !docs/**/*.png
+
+# =========================================================================
+# COPYRIGHTED THIRD-PARTY MATERIAL — NEVER COMMIT
+#
+# Sources/ holds the IEC 60076-7 standard and paywalled IEEE/Elsevier
+# papers. Committing them to a public repository is copyright infringement,
+# and it is the kind of thing that surfaces during investor or acquirer
+# diligence years later. A `git add -A` staged this folder once; the
+# pre-commit hook stopped the commit by coincidence rather than by design,
+# which is why the CI check below now looks for PDFs explicitly.
+# =========================================================================
+Sources/
+sources/
+literature/
+refs/*.pdf
+
+# The manuscript. Unsubmitted work in progress; the LaTeX source and its
+# build artefacts do not belong in the software repository. Publish the
+# paper through the journal and link to it.
+paper/
+*.aux
+*.bbl
+*.blg
+*.synctex.gz

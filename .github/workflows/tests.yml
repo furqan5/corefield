@@ -73,10 +73,24 @@ jobs:
       # What CI can check without naming anything is structural: that the
       # directories holding sensitive material are not tracked.
 
+      - name: Fail if third-party PDFs are tracked
+        # A `git add -A` once staged a folder holding the IEC 60076-7 standard
+        # and several paywalled journal papers. The confidentiality hook
+        # happened to block that commit for an unrelated reason. Coincidence is
+        # not a control, so this checks for the actual hazard: documents this
+        # project does not own, committed to a public repository.
+        run: |
+          set -euo pipefail
+          if git ls-files | grep -iE '\.(pdf|epub|djvu)$' | grep -viE '^docs/'; then
+            echo "::error::Third-party document(s) tracked. Standards and journal papers are copyrighted and must not be committed. Only docs/ may hold PDFs, and only ones this project owns."
+            exit 1
+          fi
+          echo "No third-party documents tracked."
+
       - name: Fail if legacy or private material is tracked
         run: |
           set -euo pipefail
-          if git ls-files | grep -E '^(legacy_|field/|private/|data/real/)|\.pptx$|CoreField_Transformer_Package_.*\.zip$'; then
+          if git ls-files | grep -E '^(legacy_|field/|private/|data/real/|Sources/|paper/)|\.pptx$|CoreField_Transformer_Package_.*\.zip$'; then
             echo "::error::Legacy or private material is tracked. These paths are gitignored for confidentiality reasons; do not force-add them."
             exit 1
           fi
