@@ -10,10 +10,13 @@
 # Shell scripts and hooks must be LF even on Windows, or the shebang breaks.
 *.sh text eol=lf
 
-# Licence texts are fetched verbatim from their canonical sources. Marking
-# them binary keeps git from normalising a legal document.
-LICENSE -text
-LICENSE-docs -text
+# Licence texts are verbatim from their canonical sources. Pin them to LF so
+# they stay byte-identical, but keep them TEXT: marking a licence file binary
+# stops GitHub's licence detection from reading it, which is how this
+# repository briefly showed no licence at all.
+LICENSE text eol=lf
+LICENSE-docs text eol=lf
+NOTICE text eol=lf
 
 # Never normalise these.
 *.png binary
