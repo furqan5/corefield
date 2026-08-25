@@ -49,6 +49,8 @@ transient overshoot that only a two-exponential model can follow. For **directed
 units the standard sets `k21 = 1.0`: the slow branch vanishes, the overshoot with it, and the
 three models converge. Do not quote this table for a directed-flow transformer.
 
+![Three models fitted on an ordinary day, then asked about a 1.30 pu emergency overload](docs/day_c_extrapolation.png)
+
 Models A and B read the hot spot several kelvin **high** at high load — triggering derating
 exactly when spare capacity is worth the most. That is the commercial argument, and it is why
 the production engine is classical nonlinear least squares on the IEC two-exponential structure
@@ -191,8 +193,11 @@ reference per unit.**
 **Hot-spot *location* is not observable from outside.** Top-oil is exactly invariant to where in
 the winding the hot spot sits — moving it from 10 % to 90 % of winding height changes the reading
 by 0.0000000 K, because every external measurement is a function of *total* winding loss and
-location changes only its distribution. See [ASSESSMENT.md](ASSESSMENT.md); this is why the
-package has no field-reconstruction module.
+location changes only its distribution. The Cramér–Rao bound on location from every external
+channel combined is ±40 % of winding height; two probes inside the winding give ±0.33 %. See
+[ASSESSMENT.md](ASSESSMENT.md); this is why the package has no field-reconstruction module.
+
+![Hot-spot location is invariant to every external measurement](docs/hotspot_location_invariance.png)
 
 ## Limitations
 
@@ -228,10 +233,11 @@ package has no field-reconstruction module.
 | [EVIDENCE.md](EVIDENCE.md) | (a)/(b)/(c) label index for every claim in this README |
 | [PREDICTIONS.md](PREDICTIONS.md) | Pre-registered prediction ledger, misses kept |
 | [WITHDRAWN.md](WITHDRAWN.md) | The retracted geometry-PINN branch and its mesh-convergence failure |
+| `docs/` | Figures, regenerated from the package by `python scripts/make_readme_figures.py` |
 
 ## Requirements
 
-Python 3.11+, NumPy, SciPy, pandas. CPU-only, runs comfortably in well under 2 GB. No GPU, no
+Python 3.11+, NumPy, SciPy, pandas. CPU-only — measured at 137 MiB peak resident memory for the full campaign, against a 2 GB budget. No GPU, no
 network, no paid services. The demo adds Streamlit and Matplotlib.
 
 ## Licence
