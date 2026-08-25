@@ -126,13 +126,45 @@ can be validated. That is a separate project with no commercial pull that I can 
 That last row matters: **IEEE is about to ship open-source loading-model code.** Anything whose
 value is "we implement the standard" is about to be commoditised. **(c)**
 
-### What I could not find prior art for — the genuine contribution **(b)**
+### Prior art found on 25 Aug 2026 — narrows the claim further **(a)**
 
-Searched and came up empty:
+A deeper literature pass turned up direct prior art for parameter identification from in-service
+data. This must be cited, not competed with:
 
-1. **Cramér–Rao / Fisher-information analysis of transformer thermal parameter identifiability.**
-   Nothing. The literature reports estimates without bounds. This is the strongest methodological
-   card you hold.
+| Work | What they did | Accuracy |
+|---|---|---|
+| Doolgindachbaporn et al. (Southampton) | Nonlinear optimisation of top-oil rise and oil time constant against multi-year in-service data across **nine transformers** | tuned physical model **RMSE 2.6 degC**; ANN 1.5 degC; SVM 1.6 degC |
+| SP Energy Networks, *Flexible Networks* | Offline Matlab/Simulink tuning of dtheta_or and tau_o to minimise SSE against measured top-oil | Cut dtheta_or from a 52 degC default to 45.3 degC (-6.7 K), as low as 43.0 degC on some assets |
+| WPD/ENW *OpenLV* (SDRC 4) | Per-asset calibration of a dynamic rating application | top-oil error 5.5 K -> 4.0 K -> **< 1.0 K** after calibration |
+
+**The distinction that survives.** Every one of these tunes **oil** parameters only -- dtheta_or
+and tau_o -- against **measured top-oil**. That is the easy half: top-oil is directly measured,
+so it is a straightforward curve fit. None identifies the **winding pair** (dtheta_hr, tau_w),
+because that needs hot-spot data the units do not have.
+
+CoreField identifies all four. The winding pair is the hard half, it is what the loading envelope
+depends on, and it is what the calibration schedule and the CRLB exist to make possible. Narrow
+the claim to that and it holds.
+
+**The uncomfortable one.** In the Southampton study an ANN (1.5 degC) beat the tuned physical
+model (2.6 degC) on real data. Do not pretend otherwise. The honest defence is not accuracy:
+
+- an ANN returns no parameters, so no loading envelope and no propagated uncertainty;
+- an ANN cannot extrapolate beyond its training hull, and the entire commercial product is the
+  emergency-overload case *outside* the observed range. This repository's own day-C result shows
+  what happens to models pushed past their fitted hull, and a black box has no structure to fall
+  back on when it gets there.
+
+Accuracy on interpolation is the wrong metric for a tool whose job is extrapolation.
+
+### What I could not find prior art for -- the genuine contribution **(a)**
+
+Searched twice, independently, and came up empty both times:
+
+1. **Cramer-Rao / Fisher-information analysis of transformer thermal parameter identifiability.**
+   Nothing. The literature calibrates parameters by regression, neural networks and
+   metaheuristics without ever reporting the statistical bound those methods work against. This
+   is the strongest methodological card you hold, and it is now confirmed rather than assumed.
 2. **The observability law as a calibration-*scheduling* result** — amplitudes from quasi-steady,
    rates only from transients, and each sampled transient must anchor its own asymptote.
 3. **"Commission on at least two load events"** as a CRLB-derived commissioning specification

@@ -102,7 +102,29 @@ Registered now, unscored, so that they can be scored honestly later.
 
 | # | Prediction | To be scored by |
 |---|---|---|
-| F1 | On real ODAF telemetry with a measured hot spot, Model C's trajectory RMSE will fall between 1 and 4 K — an order of magnitude worse than the 0.11 K synthetic figure, because the synthetic result is structure-matched and the real one will not be | First field-validation run |
+| F1 | ~~On real telemetry with a measured hot spot, trajectory RMSE will fall between 1 and 4 K~~ — **REVISED 25 Aug 2026, before scoring, to 2–4 K.** See note below | First field-validation run |
 | F2 | The identified τ_o on a real unit will differ from its nameplate/heat-run value by more than 10 %, because nameplate values describe a new transformer and installed units have aged and been re-cooled | First field-validation run |
 | F3 | Ambient sourced from a weather station >10 km away will cost less than 0.5 K of trajectory RMSE relative to an on-site sensor, because ambient enters through a ~75-minute low-pass | A paired-sensor comparison |
 | F4 | On a real record, the binding constraint on the loading envelope will be top-oil rather than hot-spot more often than not, because utility oil limits are set conservatively | First 20 envelope computations on real data |
+
+### Why F1 was revised, recorded before it was scored
+
+F1 was registered against no reference — a guess. On 25 Aug 2026 a literature pass produced a
+benchmark ladder that did not exist when it was written:
+
+| Reference | Hot-spot or top-oil error against measurement |
+|---|---|
+| IEC generic Table-4 constants, real 250 MVA unit, fibre-optic | ~7 K RMSE, 12.3 K worst |
+| 40 MVA ONAN, one year of operation, lumped model | +3.8 ± 0.9 K systematic |
+| Dynamic rating app before per-asset calibration | 5.5 K |
+| The same app after calibration | **< 1.0 K** |
+| Tuned physical model, nine transformers, multi-year | **2.6 °C** |
+| ANN on the same data | 1.5 °C |
+
+2–4 K is where the evidence points for a calibrated physical model. The band narrows rather than
+widens, so this is not a hedge.
+
+Revising a registered prediction is legitimate only if the revision is recorded **before**
+scoring and with its reasoning attached. Re-reading a prediction charitably after the result is
+in is not revision, it is retrofitting, and it is the failure this ledger exists to prevent.
+The original wording is struck through above rather than deleted.
