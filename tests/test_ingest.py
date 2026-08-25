@@ -398,3 +398,67 @@ def test_load_sampling_rate_matters_more_than_oil_sampling_rate(tmp_path):
     assert abs(finer_oil - fast_load) < slow_load - fast_load, (
         "refining OIL sampling must help less than refining LOAD sampling"
     )
+
+
+# --------------------------------------------------------------------------
+# Cooling stage
+# --------------------------------------------------------------------------
+
+
+def _add_stage_column(path, stage_values):
+    table = pd.read_csv(path)
+    table["cooling_stage"] = stage_values(len(table))
+    table.to_csv(path, index=False)
+    return path
+
+
+def test_cooling_stage_is_read_and_reported(tmp_path):
+    """A staged record must surface its stages before anyone fits it."""
+    path = _build_csv(tmp_path / "staged.csv")
+    _add_stage_column(path, lambda n: [1] * (n // 2) + [2] * (n - n // 2))
+    frame = load_telemetry(path)
+    assert frame.cooling_stage is not None
+    assert frame.report.cooling_stages == (1, 2)
+    assert frame.report.n_stage_changes == 1
+    assert "cooling stages" in frame.report.report()
+
+
+def test_multiple_stages_trigger_a_warning_naming_the_cost(tmp_path):
+    """The warning must state what ignoring staging costs, not just that it exists."""
+    path = _build_csv(tmp_path / "staged_warn.csv")
+    _add_stage_column(path, lambda n: [1] * (n // 2) + [2] * (n - n // 2))
+    frame = load_telemetry(path)
+    warnings = " ".join(frame.report.warnings)
+    assert "cooling stages" in warnings
+    assert "6.7" in warnings, "the warning must quantify the peak error"
+    assert "identify_staged" in warnings, "and point at the fix"
+
+
+def test_cooling_stage_is_never_interpolated(tmp_path):
+    """A stage is a discrete control state; 1.5 is not a cooling configuration."""
+    path = _build_csv(tmp_path / "stage_discrete.csv", load_stride_min=5.0)
+    _add_stage_column(path, lambda n: [1] * (n // 2) + [2] * (n - n // 2))
+    frame = load_telemetry(path, grid_step_s=30.0)
+    assert set(np.unique(frame.cooling_stage)) <= {1, 2}
+
+
+def test_single_stage_record_gets_no_staging_warning(tmp_path):
+    path = _build_csv(tmp_path / "one_stage.csv")
+    _add_stage_column(path, lambda n: [2] * n)
+    frame = load_telemetry(path)
+    assert frame.report.cooling_stages == (2,)
+    assert frame.report.n_stage_changes == 0
+    assert not any("cooling stages" in w for w in frame.report.warnings)
+
+
+def test_record_without_a_stage_column_still_works(tmp_path):
+    """Most units have one cooling configuration; the column stays optional."""
+    frame = load_telemetry(_build_csv(tmp_path / "no_stage.csv"))
+    assert frame.cooling_stage is None
+    assert frame.report.cooling_stages == ()
+
+
+def test_template_explains_the_cooling_stage_column(tmp_path):
+    text = write_template(tmp_path / "t2.csv").read_text(encoding="utf-8")
+    assert "COOLING STAGE" in text
+    assert "6.7" in text

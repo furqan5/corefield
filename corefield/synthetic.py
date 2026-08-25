@@ -76,6 +76,11 @@ __all__ = [
     "truth_trajectory",
     "calibration_indices",
     "OIL_SAMPLE_STRIDE",
+    "STAGED_TRUTH_PARAMS",
+    "FAN_ON_PU",
+    "FAN_OFF_PU",
+    "fan_stage_schedule",
+    "staged_truth_trajectory",
     "CorruptionScenario",
     "baseline",
     "oil_drift",
@@ -259,6 +264,102 @@ def truth_trajectory(
     return simulate(
         t, K, A, params, constants, load_pu_half=K_half, ambient_C_half=A_half
     )
+
+
+# --------------------------------------------------------------------------
+# Staged cooling
+# --------------------------------------------------------------------------
+
+#: Load at which the fan bank starts, and the lower load at which it stops.
+#: The gap is hysteresis: without it a load hovering at the threshold would
+#: chatter the fans on and off every sample, which no real control scheme
+#: permits and which would make the record unfittable.
+FAN_ON_PU: float = 0.95
+FAN_OFF_PU: float = 0.85
+
+#: Two-stage parameter set. Stage 1 is fans off, stage 2 is fans running.
+#:
+#: Label (b): engineering estimates, not a real unit. Running the fans is
+#: taken to cut the rated oil rise by a quarter (60 -> 45 K) and shorten the
+#: oil time constant by the same proportion (210 -> 150 min), which is the
+#: direction and rough magnitude a tank fan bank produces. The winding pair
+#: is deliberately IDENTICAL across stages, because tank fans act on the
+#: oil-to-air path and barely touch the winding-to-oil gradient -- the
+#: assumption `corefield.staged.SHARED_BY_DEFAULT` encodes, and the one this
+#: scenario exists to test.
+STAGED_TRUTH_PARAMS: dict[int, ThermalParams] = {
+    1: ThermalParams(
+        delta_theta_or_K=60.0, tau_o_min=210.0,
+        delta_theta_hr_K=22.0, tau_w_min=7.0, loss_ratio_R=6.0,
+    ),
+    2: ThermalParams(
+        delta_theta_or_K=45.0, tau_o_min=150.0,
+        delta_theta_hr_K=22.0, tau_w_min=7.0, loss_ratio_R=6.0,
+    ),
+}
+
+
+def fan_stage_schedule(load_pu: NDArray[np.float64]) -> NDArray[np.int_]:
+    """Cooling stage per sample, from load with hysteresis.
+
+    Returns 1 where the fans are off and 2 where they run. The schedule is a
+    deterministic function of the load, so the record is exactly
+    reproducible and carries no feedback from temperature back into the
+    staging.
+
+    Real units commonly stage on winding or oil temperature rather than
+    load, which does introduce that feedback. This is a simplification, and
+    it is the conservative one for testing the estimator: temperature-driven
+    staging correlates stage changes with thermal transients, which gives the
+    fit MORE information about the difference between stages, not less.
+    """
+    K = np.asarray(load_pu, dtype=np.float64)
+    stage = np.ones(K.size, dtype=np.int_)
+    running = False
+    for i, value in enumerate(K):
+        if running and value < FAN_OFF_PU:
+            running = False
+        elif not running and value > FAN_ON_PU:
+            running = True
+        stage[i] = 2 if running else 1
+    return stage
+
+
+def staged_truth_trajectory(
+    day: Literal["A", "B", "C"] = "A",
+    *,
+    staged_params: dict[int, ThermalParams] | None = None,
+    constants: CoolingConstants = ONAF_MEDIUM_LARGE_POWER,
+    dt_s: float = DT_S,
+) -> tuple[ThermalTrajectory, NDArray[np.int_]]:
+    """Ground truth for a unit whose fans switch during the day.
+
+    Returns
+    -------
+    (trajectory, stage) -- the trajectory and the cooling stage per sample.
+
+    Notes
+    -----
+    Imported lazily from `corefield.staged` to keep the dependency one-way:
+    `staged` builds on `synthetic`'s parameter sets, not the reverse.
+    """
+    from .staged import StagedThermalParams, simulate_staged
+
+    t = time_grid(1.0, dt_s)
+    load_fn = _LOAD_DAYS[day]
+    K = load_fn(t)
+    K_half = load_fn(t + 0.5 * dt_s)
+    ambient = np.full(t.size, AMBIENT_CONSTANT_C)
+    stage = fan_stage_schedule(K)
+
+    params = StagedThermalParams(
+        per_stage=staged_params or STAGED_TRUTH_PARAMS,
+        constants=constants,
+    )
+    trajectory = simulate_staged(
+        t, K, ambient, stage, params, load_pu_half=K_half, ambient_C_half=ambient
+    )
+    return trajectory, stage
 
 
 # --------------------------------------------------------------------------

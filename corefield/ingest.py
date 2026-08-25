@@ -90,6 +90,8 @@ COLUMN_ALIASES: Mapping[str, tuple[str, ...]] = {
     "ambient_C": ("ambientc", "ambient", "tambient", "ambienttemp", "airtemp", "toa", "ta"),
     "top_oil_C": ("topoilc", "topoil", "oil", "toptemp", "oiltemp", "to", "top_oil_temp"),
     "hotspot_C": ("hotspotc", "hotspot", "hst", "windingtemp", "fibre", "fiber", "wti"),
+    "cooling_stage": ("coolingstage", "stage", "coolerstage", "fanstage", "coolingmode",
+                      "coolers", "fans", "coolingstep"),
 }
 
 #: Columns written by `write_template`, in order, with their units.
@@ -99,6 +101,7 @@ TEMPLATE_COLUMNS: tuple[tuple[str, str], ...] = (
     ("ambient_C", "ambient air temperature [degC] - REQUIRED, see notes"),
     ("top_oil_C", "top-oil temperature [degC]"),
     ("hotspot_C", "hot-spot calibration reads [degC] - leave blank except where measured"),
+    ("cooling_stage", "cooling stage index, e.g. 1 = fans off, 2 = fans on - see notes"),
 )
 
 #: Longest gap in an INPUT channel that will be interpolated across [s].
@@ -143,6 +146,8 @@ class ValidationReport:
     ambient_present : whether a usable ambient channel exists
     temperature_quantisation_K : detected rounding of the top-oil channel
     n_hotspot_refs : count of hot-spot calibration reads
+    cooling_stages : distinct cooling stages present, or () if not logged
+    n_stage_changes : how many times the cooling stage switched
     warnings : non-fatal problems the user should read
     """
 
@@ -164,6 +169,8 @@ class ValidationReport:
     ambient_present: bool
     temperature_quantisation_K: float
     n_hotspot_refs: int
+    cooling_stages: tuple[int, ...] = ()
+    n_stage_changes: int = 0
     warnings: tuple[str, ...] = field(default_factory=tuple)
 
     @property
@@ -214,6 +221,11 @@ class ValidationReport:
             f"  hot-spot calibration reads: {self.n_hotspot_refs}",
             f"  ambient channel          : {'present' if self.ambient_present else 'MISSING'}",
         ]
+        if self.cooling_stages:
+            lines.append(
+                f"  cooling stages           : {list(self.cooling_stages)} "
+                f"({self.n_stage_changes} change(s))"
+            )
         if self.n_gaps:
             lines.append(
                 f"  input gaps               : {self.n_gaps} "
@@ -245,6 +257,10 @@ class TelemetryFrame:
     ambient_C : ambient temperature, interpolated onto the grid [degC]
     top_oil_C : measured top-oil, NaN where no measurement exists [degC]
     hotspot_refs : sparse hot-spot calibration reads, or None
+    cooling_stage : cooling-stage label per grid point, or None if the
+        record does not log it. Nearest-neighbour resampled, never
+        interpolated -- a stage is a discrete control state and a
+        "stage 1.4" would be meaningless.
     report : the validation report
     """
 
@@ -254,6 +270,7 @@ class TelemetryFrame:
     ambient_C: NDArray[np.float64]
     top_oil_C: NDArray[np.float64]
     hotspot_refs: HotspotReferences | None
+    cooling_stage: NDArray[np.int_] | None
     report: ValidationReport
 
     def require_fittable(self) -> None:
@@ -507,6 +524,10 @@ def load_telemetry(
             ),
         }
     )
+    if "cooling_stage" in columns:
+        table["cooling_stage"] = pd.to_numeric(
+            raw[columns["cooling_stage"]], errors="coerce"
+        ).to_numpy(float)
     if "hotspot_C" in columns:
         table["hotspot_C"] = _to_celsius(
             pd.to_numeric(raw[columns["hotspot_C"]], errors="coerce").to_numpy(float),
@@ -568,6 +589,23 @@ def load_telemetry(
         valid = (indices >= 0) & (indices < grid.size)
         oil_grid[indices[valid]] = oil_values[measured][valid]
 
+    # A cooling stage is a discrete control state, so it is carried onto the
+    # grid by nearest-neighbour hold, never interpolated. Averaging stage 1
+    # and stage 2 into 1.5 would invent a cooling configuration that does
+    # not exist on any transformer.
+    stage_grid = None
+    stages: tuple[int, ...] = ()
+    n_stage_changes = 0
+    if "cooling_stage" in table:
+        raw_stage = table["cooling_stage"].to_numpy(float)
+        present = np.isfinite(raw_stage)
+        if present.sum() >= 2:
+            positions = np.searchsorted(seconds[present], grid, side="right") - 1
+            positions = np.clip(positions, 0, present.sum() - 1)
+            stage_grid = raw_stage[present][positions].astype(np.int_)
+            stages = tuple(sorted(set(int(v) for v in stage_grid)))
+            n_stage_changes = int(np.count_nonzero(np.diff(stage_grid) != 0))
+
     hotspot_refs: HotspotReferences | None = None
     n_hotspot_refs = 0
     if "hotspot_C" in table:
@@ -604,6 +642,14 @@ def load_telemetry(
             f"only over {load_min:.2f}-{load_max:.2f} pu; any loading-envelope result above "
             f"that span is extrapolation and must be labelled as such."
         )
+    if len(stages) > 1:
+        warnings.append(
+            f"{len(stages)} cooling stages are present with {n_stage_changes} change(s). "
+            f"Fitting ONE parameter set across a stage change is wrong: on synthetic "
+            f"data it costs 4.9 K RMSE and +6.7 K at the peak, worse than the "
+            f"single-exponential models this package exists to beat. Use "
+            f"corefield.staged.identify_staged."
+        )
     if n_hotspot_refs == 0:
         warnings.append(
             "no hot-spot calibration reads. Top-oil carries ZERO information about the "
@@ -632,6 +678,8 @@ def load_telemetry(
         ambient_present=True,
         temperature_quantisation_K=_detect_quantisation(oil_values),
         n_hotspot_refs=n_hotspot_refs,
+        cooling_stages=stages,
+        n_stage_changes=n_stage_changes,
         warnings=tuple(warnings),
     )
 
@@ -642,6 +690,7 @@ def load_telemetry(
         ambient_C=ambient_grid,
         top_oil_C=oil_grid,
         hotspot_refs=hotspot_refs,
+        cooling_stage=stage_grid,
         report=report,
     )
 
@@ -690,6 +739,14 @@ def write_template(path: str | Path, *, example_rows: int = 0) -> Path:
         "# information floor from ~12 % to ~4 %. Use a bias-audited reference:",
         "# a winding-temperature-indicator replica transfers its own bias into the",
         "# identified parameters (+3 K bias -> +14.5 % on the gradient parameter).",
+        "#",
+        "# COOLING STAGE: if this unit has switchable fans or pumps, log which",
+        "# stage is running as an integer (1 = fans off, 2 = first bank, and so on).",
+        "# It matters more than it looks. When a fan bank starts, the oil sheds heat",
+        "# faster and the thermal parameters change discontinuously. Fitting a single",
+        "# parameter set across a stage change costs 4.9 K RMSE and +6.7 K at the peak",
+        "# on synthetic data - worse than the simplified models this tool exists to",
+        "# beat. If the unit has only one cooling configuration, leave the column out.",
         "#",
         "# LOAD: per-unit of rated current. If you have amperes instead, name the",
         "# column current_A and supply the nameplate rated current at import.",

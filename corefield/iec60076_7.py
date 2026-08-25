@@ -534,8 +534,21 @@ def _integrate(
     dt: float,
     solver: Solver,
     initial_state: "InitialState | None" = None,
-) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
+    raw_initial: tuple[float, float, float] | None = None,
+    return_state: bool = False,
+) -> tuple[NDArray[np.float64], NDArray[np.float64]] | tuple[
+    NDArray[np.float64], NDArray[np.float64], tuple[float, float, float]
+]:
     """Core integrator. Returns (top_oil_C, hotspot_C).
+
+    `raw_initial` sets the three internal states directly as
+    (top_oil_C, fast_branch_K, slow_branch_K), overriding `initial_state`.
+    `return_state` additionally returns their final values. Both exist for
+    staged cooling: when fans switch, the parameters change but the
+    transformer's stored heat does not, so a segmented integration has to
+    hand the exact internal state across the boundary. Only the DIFFERENCE
+    of the two gradient branches is observable, so the pair cannot be
+    recovered from the output and must be carried explicitly.
 
     Performance note. The obvious implementation -- a Python loop carrying a
     3-vector through RK4 -- costs about 1.5 s per identification fit, which
@@ -567,7 +580,9 @@ def _integrate(
 
     # Initial condition: thermal equilibrium at the opening load and ambient,
     # unless the caller supplies the unit's actual current state.
-    if initial_state is None:
+    if raw_initial is not None:
+        s0, s1, s2 = (float(v) for v in raw_initial)
+    elif initial_state is None:
         s0 = float(A_on[0] + dtor * fK_on[0])
         s1 = float(amp_fast * Ky_on[0])
         s2 = float(amp_slow * Ky_on[0])
@@ -591,6 +606,8 @@ def _integrate(
             s2 += dt * d2
             top_oil[i + 1] = s0
             hotspot[i + 1] = s0 + s1 - s2
+        if return_state:
+            return top_oil, hotspot, (s0, s1, s2)
         return top_oil, hotspot
 
     # Fast path: three independent one-pole recurrences, evaluated in C.
@@ -608,7 +625,11 @@ def _integrate(
     fast_state = _linear_recurrence(a_fast, b_fast, s1, n)
     slow_state = _linear_recurrence(a_slow, b_slow, s2, n)
 
-    return oil_state, oil_state + fast_state - slow_state
+    hotspot_out = oil_state + fast_state - slow_state
+    if return_state:
+        final = (float(oil_state[-1]), float(fast_state[-1]), float(slow_state[-1]))
+        return oil_state, hotspot_out, final
+    return oil_state, hotspot_out
 
 
 def _integrate_reference(
