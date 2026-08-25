@@ -17,12 +17,15 @@ has for its installed fleet.
 
 > ## ⚠ TWO THINGS TO READ BEFORE ANYTHING ELSE
 >
-> **1. IEC 60076-7 provenance: UNVERIFIED.** The equation structure and cooling-class constants
-> in this repository were mirror-sourced from a public copy of the standard and cross-checked
-> against two independent literature implementations. They have **not** been checked against a
-> licensed copy. Re-verify before any client-facing use. What *is* independently verified is the
-> *k-assignment* — which time constant attaches to which branch — by three numerical checks in
-> `corefield.verification`. The structure is checked; the table values are not.
+> **1. IEC 60076-7 provenance.** The two-exponential structure and the ONAF constants were
+> checked against the published text of IEC 60076-7:2018 Edition 2.0 on 25 Aug 2026 and **match
+> it** — all five cooling-class constants, both tabulated time constants, and the assignment of
+> each time constant to its branch. Three numerical checks in `corefield.verification` confirm
+> that assignment independently of any document.
+>
+> **This repository reproduces no text, table or figure from the standard.** IEC standards are
+> copyrighted and sold. If you claim standards compliance, hold your own copy from an authorised
+> distributor — the constants here are used as engineering facts, not as a substitute for it.
 >
 > **2. Field validation: none.** Every number in this repository was produced from synthetic
 > data. No measurement from a real transformer has ever entered it. See
@@ -40,6 +43,11 @@ Three model structures were fitted on the same ordinary day (0.6–1.2 pu), then
 | A | single-exponential, K² drive | 2.59 K | **+6.17 K** | FAIL |
 | B | single-exponential, free exponent | 1.77 K | **+3.17 K** | FAIL |
 | **C** | **IEC two-exponential** | **0.11 K** | **+0.32 K** | **PASS** |
+
+This separation belongs to **ON.. cooling classes**, where `k21 = 2.0` gives the winding a
+transient overshoot that only a two-exponential model can follow. For **directed-flow (OD/ODAF)**
+units the standard sets `k21 = 1.0`: the slow branch vanishes, the overshoot with it, and the
+three models converge. Do not quote this table for a directed-flow transformer.
 
 Models A and B read the hot spot several kelvin **high** at high load — triggering derating
 exactly when spare capacity is worth the most. That is the commercial argument, and it is why
@@ -130,11 +138,14 @@ is cheap: ambient reaches the winding through a ~75-minute oil low-pass, so an h
 weather feed is sufficient.
 
 **It will not supply loading limits.** `LoadingLimits` has no defaults and
-`iec_loading_limits()` exists only to raise `NotImplementedError` explaining why. The limits
-decide the temperature at which this software tells an operator it is safe to overload a
-transformer, and this repository's IEC text is unverified — that is the worst possible place for
-a remembered number. You supply the limits and a provenance string, and that string travels into
-every result.
+`iec_loading_limits()` exists only to raise `NotImplementedError` explaining why. This is
+unchanged by the constants having been checked: verifying Table 4's *thermal characteristics*
+says nothing about the *permissible temperature limits*, which are a different table and were
+deliberately not read. More importantly, the limits decide the temperature at which this
+software tells an operator it is safe to overload a transformer, and they vary with loading type,
+transformer category and each utility's own policy. That number must be owned by the person
+relying on it. You supply the limits and a provenance string, and that string travels into every
+result.
 
 **It will not return a railed fit.** If every optimiser start converges onto a bound,
 `identify` raises rather than returning the best of a bad set. A solution pinned to a bound is an

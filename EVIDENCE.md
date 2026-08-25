@@ -37,8 +37,10 @@ The README quotes the reproduced value, not the published one.
 
 | # | Claim | Label | Where verified |
 |---|---|---|---|
-| 9 | The four parameters are the ones IEC 60076-7 says require a heat-run test with fibre-optic sensors | **(a)** for the standard's statement, **mirror-sourced and UNVERIFIED** for the text itself | Legacy methods v4 §9.4. **Not** re-verified against a licensed copy |
-| 10 | ONAF constants x=0.8, y=1.3, k11=0.5, k21=2.0, k22=2.0 | **UNVERIFIED** — mirror-sourced | `test_physics.py::test_settled_constants_are_unchanged` pins the *values in use*, not their correctness |
+| 9 | The four parameters are the ones IEC 60076-7 says require a heat-run test with fibre-optic sensors | **(a)** | Checked against the standard 25 Aug 2026. It states these constants can be determined in a prolonged heat-run test, and that k21, k22 and tau_w require fibre-optic sensors |
+| 10 | ONAF constants x=0.8, y=1.3, k11=0.5, k21=2.0, k22=2.0 | **(a)** | Checked against IEC 60076-7:2018 Ed. 2.0, 25 Aug 2026 — all five match, as do tau_o=150 min and tau_w=7 min. `test_physics.py::test_settled_constants_are_unchanged` pins the values in use |
+| 10b | For OD/ODAF, k21 = 1.0, so the overshoot vanishes and the A/B/C separation does not transfer | **(a)** | Same check. `OD_MEDIUM_LARGE_POWER` in `iec60076_7.py`; `verify_k_assignment` returns 0.00 % overshoot for it |
+| 10c | tau_w differs between natural and forced air (10 vs 7 min), so it cannot be shared across cooling stages | **(a)** | Same check. Corrected `staged.SHARED_BY_DEFAULT`, which had wrongly shared it |
 | 11 | The **k-assignment** (which time constant on which branch) is verified | **(a)** | `test_physics.py::test_k_assignment_verified` — three independent numerical checks |
 | 12 | Closed-form vs RK4 agreement: 1.097×10⁻⁷ K | **(a)** | same |
 | 13 | Oil reaches 63.2 % of its step at t = k11·τ_o | **(a)** | same |

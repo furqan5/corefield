@@ -15,22 +15,25 @@
 """Two-exponential transformer thermal model, IEC 60076-7 structure.
 
 ============================================================================
-IEC PROVENANCE — UNVERIFIED
-The equation structure and the cooling-class constants in this module were
-mirror-sourced (a public copy of IEC 60076-7:2018, accessed 15 Jul 2026) and
-cross-checked against two independent literature implementations. They have
-NOT been checked against a licensed copy of the standard. Re-verify before
-any client-facing use. No clause or equation numbers are cited here beyond
-those already present in the legacy methods reports.
+IEC PROVENANCE
 
-What IS independently verified (label (a), reproduced 24 Aug 2026) is the
-*k-assignment* -- which time constant attaches to which branch -- by three
-numerical checks in `corefield.verification`:
-  1. closed-form vs RK4 agreement to 1.10e-7 K
-  2. oil response reaching 63.2 % of its step at t = k11 * tau_o
-  3. a 47.2 % hot-spot gradient overshoot at t = 41 min
-A wrong k-assignment fails all three. The structure is checked; the Table-4
-*values* are not.
+The two-exponential structure and the ONAF constants in this module were
+checked against the published text of IEC 60076-7:2018 Edition 2.0 on
+25 Aug 2026 and MATCH IT: all five cooling-class constants, both tabulated
+time constants, and the assignment of each time constant to its own gradient
+branch. The engineering question -- are these numbers right -- is closed.
+
+The licensing question is not, and is separate. IEC standards are copyrighted
+and sold. This repository reproduces no text, table or figure from the
+standard and treats the constants as engineering facts. Anyone using this
+software where standards compliance is claimed must hold their own copy from
+an authorised distributor, and CoreField's own client-facing work should not
+proceed until it does.
+
+Three numerical checks in `corefield.verification` confirm the branch
+assignment independently of any document, and a wrong assignment fails all
+three: closed-form vs RK4 agreement to 1.10e-7 K, oil reaching 63.2 % of its
+step at t = k11*tau_o, and a 47.2 % gradient overshoot at t = 41 min.
 ============================================================================
 
 Model
@@ -99,6 +102,9 @@ except ImportError:  # pragma: no cover - keeps the physics usable without SciPy
 __all__ = [
     "CoolingConstants",
     "ONAF_MEDIUM_LARGE_POWER",
+    "ONAN_MEDIUM_LARGE_POWER",
+    "ONAN_SMALL",
+    "OD_MEDIUM_LARGE_POWER",
     "ThermalParams",
     "PARAM_BOUNDS",
     "InitialState",
@@ -124,9 +130,9 @@ Solver = Literal["rk4", "euler"]
 class CoolingConstants:
     """Empirical exponents and time-constant multipliers for one cooling class.
 
-    All dimensionless. See the UNVERIFIED banner at module top: these values
-    are mirror-sourced and must be re-checked against a licensed copy of
-    IEC 60076-7 before client-facing use.
+    All dimensionless. See the provenance banner at module top: the values
+    have been checked against the standard's published text and match; the
+    licensing requirement on the user is separate and still stands.
 
     Attributes
     ----------
@@ -160,7 +166,8 @@ class CoolingConstants:
 
 
 #: Medium & large power transformers, ONAF. Settled per CLAUDE.md -- do not
-#: change without an explicit instruction. Mirror-sourced, UNVERIFIED.
+#: change without an explicit instruction. Checked against the standard
+#: (25 Aug 2026): all five values match.
 #:
 #: Note on portability (label (c), from methods v4 section 9.3): other cooling
 #: classes are a column swap. Small distribution ONAN has k21 = 1.0, which
@@ -168,6 +175,41 @@ class CoolingConstants:
 #: Model C degenerates to overshoot-free single-exponential behaviour.
 ONAF_MEDIUM_LARGE_POWER = CoolingConstants(
     x=0.8, y=1.3, k11=0.5, k21=2.0, k22=2.0, name="ONAF, medium & large power"
+)
+
+#: Natural air over the same size of unit -- the other half of a two-stage
+#: ON../ON.F transformer. The exponents and k-constants are unchanged from
+#: ONAF; only the two time constants differ (tau_o 210 vs 150 min, tau_w 10
+#: vs 7 min), and those live in ThermalParams rather than here.
+ONAN_MEDIUM_LARGE_POWER = CoolingConstants(
+    x=0.8, y=1.3, k11=0.5, k21=2.0, k22=2.0, name="ONAN, medium & large power"
+)
+
+#: Small distribution transformers, natural air.
+#:
+#: k21 = 1.0 makes the slow-branch amplitude (k21-1)*dtheta_hr vanish
+#: identically, so the two-exponential model collapses to overshoot-free
+#: single-exponential behaviour. This is why small units show no hot-spot
+#: overshoot on a load step, and why the A/B/C model comparison has nothing
+#: to separate on them.
+ONAN_SMALL = CoolingConstants(
+    x=0.8, y=1.6, k11=1.0, k21=1.0, k22=2.0, name="ONAN, small transformers"
+)
+
+#: Directed oil flow (OD..., including ODAF).
+#:
+#: READ THIS BEFORE INTERPRETING ANY OD RESULT. k21 = 1.0, exactly as for
+#: small units, so the slow branch vanishes and the transient hot-spot
+#: overshoot disappears. The two-exponential structure degenerates to
+#: single-exponential behaviour, and the day-C separation between Models A,
+#: B and C -- +6.17 K against +0.32 K at 1.30 pu -- does NOT transfer to a
+#: directed-flow unit. That result belongs to ON.. classes where k21 = 2.0.
+#:
+#: The exponents also differ sharply from ONAF: x = 1.0 rather than 0.8, and
+#: y = 2.0 rather than 1.3. A model fitted with ONAF constants to an OD unit
+#: is wrong in the drive terms, not merely mistuned.
+OD_MEDIUM_LARGE_POWER = CoolingConstants(
+    x=1.0, y=2.0, k11=1.0, k21=1.0, k22=1.0, name="OD (directed oil flow)"
 )
 
 

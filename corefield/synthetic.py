@@ -277,20 +277,26 @@ def truth_trajectory(
 FAN_ON_PU: float = 0.95
 FAN_OFF_PU: float = 0.85
 
-#: Two-stage parameter set. Stage 1 is fans off, stage 2 is fans running.
+#: Two-stage parameter set. Stage 1 is fans off (natural air), stage 2 is
+#: fans running (forced air), for the same medium/large power transformer.
 #:
-#: Label (b): engineering estimates, not a real unit. Running the fans is
-#: taken to cut the rated oil rise by a quarter (60 -> 45 K) and shorten the
-#: oil time constant by the same proportion (210 -> 150 min), which is the
-#: direction and rough magnitude a tank fan bank produces. The winding pair
-#: is deliberately IDENTICAL across stages, because tank fans act on the
-#: oil-to-air path and barely touch the winding-to-oil gradient -- the
-#: assumption `corefield.staged.SHARED_BY_DEFAULT` encodes, and the one this
-#: scenario exists to test.
+#: The two TIME CONSTANTS are the standard's own tabulated values for those
+#: two cooling classes -- tau_o 210 -> 150 min and tau_w 10 -> 7 min. An
+#: earlier version of this scenario held tau_w equal across stages on the
+#: reasoning that tank fans do not touch the winding path; checking the
+#: standard showed that is not what it says.
+#:
+#: The rated oil rise (60 -> 45 K) is label (b), an engineering estimate:
+#: it is unit-specific and not tabulated anywhere. A quarter reduction is
+#: the direction and rough magnitude a fan bank produces.
+#:
+#: The rated gradient is deliberately IDENTICAL across stages -- the one
+#: assumption `corefield.staged.SHARED_BY_DEFAULT` still encodes, and the
+#: thing this scenario exists to test.
 STAGED_TRUTH_PARAMS: dict[int, ThermalParams] = {
     1: ThermalParams(
         delta_theta_or_K=60.0, tau_o_min=210.0,
-        delta_theta_hr_K=22.0, tau_w_min=7.0, loss_ratio_R=6.0,
+        delta_theta_hr_K=22.0, tau_w_min=10.0, loss_ratio_R=6.0,
     ),
     2: ThermalParams(
         delta_theta_or_K=45.0, tau_o_min=150.0,

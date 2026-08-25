@@ -30,18 +30,29 @@ that a single parameter set does not survive contact with a staged unit.
 WHAT CHANGES BETWEEN STAGES, AND WHAT DOES NOT
 ----------------------------------------------
 Not all four parameters need to be per-stage, and making them all per-stage
-costs conditioning for nothing.
+costs conditioning for nothing. But fewer of them are shared than intuition
+suggests.
 
-Tank fans act on the oil-to-air path. They change how fast and how far the
-OIL cools, so `delta_theta_or` and `tau_o` are per-stage. The winding-to-oil
-gradient is set by the winding geometry and the oil moving through the
-winding, which tank fans barely touch, so `delta_theta_hr` and `tau_w` are
-shared by default.
+`delta_theta_or` and `tau_o` are per-stage: fans act on the oil-to-air path
+and change how far and how fast the oil cools.
 
-That default is right for ONAN/ONAF-style staging and WRONG for OD classes,
-where pumps change the flow through the winding itself and therefore the
-gradient. Set `shared=()` for a directed-flow unit and let all four float per
-stage -- at the cost of needing enough data in every stage to support them.
+`tau_w` is ALSO per-stage. An earlier version of this module shared it, on
+the reasoning that tank fans do not touch the winding-to-oil path. That
+reasoning is wrong: IEC 60076-7 Table 4 gives different winding time
+constants for the two cooling classes of the same transformer (10 min
+against 7 min for medium and large power units, natural against forced air).
+The standard was checked and the assumption did not survive it.
+
+`delta_theta_hr` is shared by default. It is the product of the hot-spot
+factor and the rated winding-to-oil gradient, both properties of the winding
+geometry and of oil circulation driven by buoyancy in either stage, so tank
+fans leave it alone. Table 4 does not tabulate it -- it is unit-specific --
+so this remains an assumption rather than a checked value, and it is
+recorded on `StagedThermalParams.shared` for exactly that reason.
+
+For directed-flow (OD) classes, pumps change the flow through the winding
+itself and therefore the gradient too. Set `shared=()` there and let all
+four float per stage, at the cost of needing enough data in every stage.
 
 STATE IS CARRIED, PARAMETERS ARE NOT
 ------------------------------------
@@ -83,8 +94,11 @@ __all__ = [
 ]
 
 #: Parameters held common across cooling stages unless told otherwise.
-#: See the module docstring: right for tank-fan staging, wrong for OD classes.
-SHARED_BY_DEFAULT: tuple[str, ...] = ("delta_theta_hr_K", "tau_w_min")
+#: Only the rated gradient. tau_w is NOT shared -- see the module docstring:
+#: IEC 60076-7 Table 4 gives different winding time constants for natural and
+#: forced-air cooling of the same unit, which contradicted the assumption an
+#: earlier version of this module made.
+SHARED_BY_DEFAULT: tuple[str, ...] = ("delta_theta_hr_K",)
 
 _PARAM_ORDER: tuple[str, ...] = (
     "delta_theta_or_K",

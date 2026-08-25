@@ -646,7 +646,7 @@ def load_telemetry(
         warnings.append(
             f"{len(stages)} cooling stages are present with {n_stage_changes} change(s). "
             f"Fitting ONE parameter set across a stage change is wrong: on synthetic "
-            f"data it costs 4.9 K RMSE and +6.7 K at the peak, worse than the "
+            f"data it costs 4.96 K RMSE and +6.54 K at the peak, worse than the "
             f"single-exponential models this package exists to beat. Use "
             f"corefield.staged.identify_staged."
         )
@@ -744,7 +744,7 @@ def write_template(path: str | Path, *, example_rows: int = 0) -> Path:
         "# stage is running as an integer (1 = fans off, 2 = first bank, and so on).",
         "# It matters more than it looks. When a fan bank starts, the oil sheds heat",
         "# faster and the thermal parameters change discontinuously. Fitting a single",
-        "# parameter set across a stage change costs 4.9 K RMSE and +6.7 K at the peak",
+        "# parameter set across a stage change costs 4.96 K RMSE and +6.54 K at the peak",
         "# on synthetic data - worse than the simplified models this tool exists to",
         "# beat. If the unit has only one cooling configuration, leave the column out.",
         "#",

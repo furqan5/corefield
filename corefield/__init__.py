@@ -20,9 +20,10 @@ ambient temperature, top-oil temperature -- then runs the identified model in
 service to answer the question that carries commercial value: how much extra
 load can this specific unit carry, and for how long.
 
-    IEC PROVENANCE: UNVERIFIED. Equation structure and cooling-class
-    constants were mirror-sourced and have not been checked against a
-    licensed copy of IEC 60076-7. Re-verify before client-facing use.
+    IEC PROVENANCE: the structure and ONAF constants were checked against
+    IEC 60076-7:2018 Edition 2.0 (25 Aug 2026) and match. No standard text
+    is reproduced here. Users claiming standards compliance must hold their
+    own licensed copy from an authorised distributor.
 
     FIELD VALIDATION: NONE. Every number this package reproduces was
     generated from synthetic data. No measurement from a real transformer
@@ -40,7 +41,10 @@ from __future__ import annotations
 __version__ = "0.1.0.dev0"
 
 from .iec60076_7 import (
+    OD_MEDIUM_LARGE_POWER,
     ONAF_MEDIUM_LARGE_POWER,
+    ONAN_MEDIUM_LARGE_POWER,
+    ONAN_SMALL,
     PARAM_BOUNDS,
     CoolingConstants,
     ThermalParams,
@@ -58,6 +62,9 @@ __all__ = [
     "__version__",
     "CoolingConstants",
     "ONAF_MEDIUM_LARGE_POWER",
+    "ONAN_MEDIUM_LARGE_POWER",
+    "ONAN_SMALL",
+    "OD_MEDIUM_LARGE_POWER",
     "ThermalParams",
     "ThermalTrajectory",
     "PARAM_BOUNDS",

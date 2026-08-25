@@ -430,7 +430,7 @@ def test_multiple_stages_trigger_a_warning_naming_the_cost(tmp_path):
     frame = load_telemetry(path)
     warnings = " ".join(frame.report.warnings)
     assert "cooling stages" in warnings
-    assert "6.7" in warnings, "the warning must quantify the peak error"
+    assert "6.54" in warnings, "the warning must quantify the peak error"
     assert "identify_staged" in warnings, "and point at the fix"
 
 
@@ -461,4 +461,4 @@ def test_record_without_a_stage_column_still_works(tmp_path):
 def test_template_explains_the_cooling_stage_column(tmp_path):
     text = write_template(tmp_path / "t2.csv").read_text(encoding="utf-8")
     assert "COOLING STAGE" in text
-    assert "6.7" in text
+    assert "6.54" in text
