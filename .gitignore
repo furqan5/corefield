@@ -111,6 +111,12 @@ desktop.ini
 # pre-commit hook stopped the commit by coincidence rather than by design,
 # which is why the CI check below now looks for PDFs explicitly.
 # =========================================================================
+# Third-party operational data supplied privately by its owner. Not ours to
+# publish under any licence, and the single fastest way to destroy a data
+# relationship. Working analysis lives in private/, results go in the paper.
+*.xlsx
+*.xls
+
 Sources/
 sources/
 literature/

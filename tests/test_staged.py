@@ -322,3 +322,137 @@ def test_initial_state_is_honoured(staged_day):
         staged_day["stage"], params, initial_state=InitialState(95.0, 1.1),
     )
     assert warm.top_oil_C[0] == pytest.approx(95.0)
+
+
+# --------------------------------------------------------------------------
+# Railing against the tau_w < tau_o structural constraint
+#
+# The box-bound check cannot see this one. ThermalParams requires tau_w <
+# tau_o, and `residual` returns a flat penalty wherever that is violated,
+# which turns the constraint into an invisible wall in the cost surface: the
+# optimiser walks tau_w up to it and stops. Before these tests, a solution
+# pressed against that wall was reported as converged and interior, and from
+# some starts the fit died with a bare ValueError out of `_unpack` instead of
+# the designed refusal.
+#
+# Found on a 360 MVA ODAF field record whose 10-minute log samples a 7-minute
+# winding transient less than once per time constant: stage 3 came back with
+# tau_w = tau_o - 1e-6 min and was accepted.
+# --------------------------------------------------------------------------
+
+
+def test_a_solution_pressed_against_the_tau_w_constraint_is_refused():
+    """tau_w driven up to tau_o is the constraint talking, not the data.
+
+    Starting the optimiser with the two constants equal puts it on the wall.
+    Whatever it returns from there, it must not be a success.
+    """
+    trajectory, stage = staged_truth_trajectory("A")
+    t = trajectory.time_s
+    ambient = np.full(t.size, AMBIENT_CONSTANT_C)
+    oil = np.full(t.size, np.nan)
+    oil_index = np.arange(0, t.size, OIL_SAMPLE_STRIDE)
+    # A top-oil channel stuck at one value carries no rate information, so
+    # nothing in the record can hold the two time constants apart.
+    oil[oil_index] = 60.0
+    cal_index = calibration_indices(17, t)
+    refs = HotspotReferences(t[cal_index], np.full(cal_index.size, 75.0),
+                             source="synthetic-degenerate")
+
+    with pytest.raises(RuntimeError) as excinfo:
+        identify_staged(
+            t, trajectory.load_pu, ambient, oil, refs, stage,
+            loss="linear", start=(30.0, 3000.0, 15.0, 3000.0),
+        )
+    assert "railed" in str(excinfo.value)
+
+
+def test_the_constraint_check_names_the_stage_and_both_constants():
+    from corefield.staged import STRUCTURAL_MARGIN, _build_packing, _unpack_raw
+
+    slots = _build_packing((1, 2), ("delta_theta_hr_K",))
+    # tau_w a hair under tau_o on stage 2: interior to every box bound, and
+    # exactly the solution the field record produced.
+    vector = np.zeros(len(slots))
+    for i, (name, st) in enumerate(slots):
+        vector[i] = {"delta_theta_or_K": 40.0, "tau_o_min": 6000.0,
+                     "delta_theta_hr_K": 20.0, "tau_w_min": 600.0}[name]
+        if name == "tau_w_min" and st == 2:
+            vector[i] = 6000.0 * (1.0 - 1e-9)
+    raw = _unpack_raw(vector, slots, (1, 2))
+    assert raw[2][3] >= (1.0 - STRUCTURAL_MARGIN) * raw[2][1]
+    assert raw[1][3] < (1.0 - STRUCTURAL_MARGIN) * raw[1][1]
+
+
+# --------------------------------------------------------------------------
+# Holding a parameter instead of chasing it
+# --------------------------------------------------------------------------
+
+
+def test_a_fixed_parameter_is_held_exactly_and_declared(staged_day):
+    """A held parameter must come back untouched, and be reported as held.
+
+    This is the honest route out of the constraint above: a 10-minute log
+    cannot inform a 7-minute winding constant, so hold it at the IEC 60076-7
+    Table 4 value and say so, rather than reporting whichever limit the
+    optimiser reached as a measurement of the unit.
+    """
+    result = _fit(staged_day, fixed={"tau_w_min": 8.0})
+    assert result.success
+    for stage in (1, 2):
+        assert result.params.for_stage(stage).tau_w_min == pytest.approx(8.0)
+    assert result.fixed_parameters == {"tau_w_min": 8.0}
+    assert "HELD, NOT IDENTIFIED" in result.report()
+    assert "tau_w_min=8" in result.report()
+
+
+def test_fixing_a_parameter_removes_its_slots_from_the_optimiser(staged_day):
+    """Holding tau_w must drop both of its per-stage slots, not just pin them."""
+    from corefield.staged import _build_packing
+
+    free = _build_packing((1, 2), ("delta_theta_hr_K",))
+    held = _build_packing((1, 2), ("delta_theta_hr_K",), ("tau_w_min",))
+    assert len(free) - len(held) == 2
+    assert not any(name == "tau_w_min" for name, _ in held)
+
+
+def test_holding_tau_w_still_recovers_the_parameters_the_data_supports(staged_day):
+    """The three identified parameters must not degrade when the fourth is held.
+
+    Held at the truth value, so this isolates the mechanism from any error the
+    held value itself introduces.
+    """
+    truth_tau_w = STAGED_TRUTH_PARAMS[1].tau_w_min
+    result = _fit(staged_day, fixed={"tau_w_min": truth_tau_w})
+    for stage in (1, 2):
+        truth = STAGED_TRUTH_PARAMS[stage]
+        fitted = result.params.for_stage(stage)
+        for name in ("delta_theta_or_K", "tau_o_min", "delta_theta_hr_K"):
+            error = abs(getattr(fitted, name) - getattr(truth, name)) / getattr(truth, name)
+            assert error < 0.05, f"stage {stage} {name} off by {error * 100:.2f} %"
+
+
+@pytest.mark.parametrize(
+    "fixed, match",
+    [
+        ({"tau_z_min": 5.0}, "unknown parameter name"),
+        ({"delta_theta_hr_K": 20.0}, "both `fixed` and `shared`"),
+        ({"tau_w_min": 999.0}, "outside the physical plausibility bounds"),
+    ],
+)
+def test_malformed_fixed_is_refused(staged_day, fixed, match):
+    with pytest.raises(ValueError, match=match):
+        _fit(staged_day, fixed=fixed)
+
+
+def test_fixing_every_parameter_is_refused(staged_day):
+    """Holding all four leaves nothing to identify -- that is a simulation.
+
+    `shared` is emptied first so this trips the intended check rather than
+    the fixed/shared overlap one.
+    """
+    with pytest.raises(ValueError, match="nothing to identify"):
+        _fit(staged_day, shared=(), fixed={
+            "delta_theta_or_K": 40.0, "tau_o_min": 100.0,
+            "delta_theta_hr_K": 20.0, "tau_w_min": 7.0,
+        })

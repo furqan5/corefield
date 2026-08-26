@@ -76,6 +76,7 @@ from scipy.optimize import least_squares
 from .estimator import HotspotReferences, OPTIMISER_BOUNDS, _railed_parameters
 from .iec60076_7 import (
     ONAF_MEDIUM_LARGE_POWER,
+    PARAM_BOUNDS,
     CoolingConstants,
     InitialState,
     ThermalParams,
@@ -86,6 +87,7 @@ from .iec60076_7 import (
 
 __all__ = [
     "SHARED_BY_DEFAULT",
+    "STRUCTURAL_MARGIN",
     "StagedThermalParams",
     "StagedIdentificationResult",
     "stage_segments",
@@ -190,6 +192,10 @@ class StagedIdentificationResult:
     n_observations: tuple[int, int]
     stage_sample_counts: Mapping[int, int]
     railed_parameters: tuple[str, ...]
+    #: Parameters held at a supplied value instead of identified, in that
+    #: field's own units. A held parameter is NOT a measurement of this unit
+    #: and must not be reported as one.
+    fixed_parameters: Mapping[str, float] = field(default_factory=dict)
     warnings: tuple[str, ...] = field(default_factory=tuple)
 
     def report(self) -> str:
@@ -203,6 +209,12 @@ class StagedIdentificationResult:
             "",
             self.params.report(),
         ]
+        if self.fixed_parameters:
+            lines.append(
+                "  HELD, NOT IDENTIFIED: "
+                + ", ".join(f"{k}={v:g}" for k, v in sorted(self.fixed_parameters.items()))
+                + "  (tabulated values, not measurements of this unit)"
+            )
         for w in self.warnings:
             lines.append(f"  WARNING: {w}")
         return "\n".join(lines)
@@ -366,10 +378,20 @@ def simulate_staged(
 # --------------------------------------------------------------------------
 
 
-def _build_packing(stages: tuple[int, ...], shared: tuple[str, ...]):
-    """Map (stage, parameter) onto positions in a flat optimiser vector."""
+def _build_packing(
+    stages: tuple[int, ...],
+    shared: tuple[str, ...],
+    fixed: tuple[str, ...] = (),
+):
+    """Map (stage, parameter) onto positions in a flat optimiser vector.
+
+    Names in `fixed` get no slot at all: they are held at a caller-supplied
+    value and never seen by the optimiser.
+    """
     slots: list[tuple[str, int | None]] = []
     for name in _PARAM_ORDER:
+        if name in fixed:
+            continue
         if name in shared:
             slots.append((name, None))
         else:
@@ -377,18 +399,44 @@ def _build_packing(stages: tuple[int, ...], shared: tuple[str, ...]):
     return slots
 
 
-def _unpack(vector, slots, stages, loss_ratio_R):
-    """Turn the flat vector back into one ThermalParams per stage."""
+def _unpack_raw(vector, slots, stages, fixed=None) -> dict[int, list[float]]:
+    """Flat vector -> {stage: [dtheta_or (K), tau_o (s), dtheta_hr (K), tau_w (s)]}.
+
+    Separate from `_unpack` because the structural-constraint check in
+    `identify_staged` has to inspect a solution that `ThermalParams` would
+    refuse to construct.
+
+    `fixed` maps a parameter name to its held value in WORKING units (K for
+    the rises, seconds for the time constants).
+    """
     values: dict[int, list[float]] = {s: [0.0, 0.0, 0.0, 0.0] for s in stages}
+    for name, held in (fixed or {}).items():
+        for s in stages:
+            values[s][_VECTOR_INDEX[name]] = float(held)
     for position, (name, stage) in enumerate(slots):
         index = _VECTOR_INDEX[name]
         targets = stages if stage is None else (stage,)
         for s in targets:
             values[s][index] = float(vector[position])
+    return values
+
+
+def _unpack(vector, slots, stages, loss_ratio_R, fixed=None):
+    """Turn the flat vector back into one ThermalParams per stage."""
     return {
         s: ThermalParams.from_vector(np.array(v), loss_ratio_R=loss_ratio_R)
-        for s, v in values.items()
+        for s, v in _unpack_raw(vector, slots, stages, fixed).items()
     }
+
+
+#: How close tau_w may sit to tau_o before the solution counts as pinned
+#: against the structural constraint rather than determined by the record.
+#:
+#: (c) Judgement, not a measured constant. The two-exponential structure only
+#: carries information while the branches are separated; as tau_w -> tau_o the
+#: winding branch has stopped being the fast one and the value the optimiser
+#: reports is set by the constraint, not by the data.
+STRUCTURAL_MARGIN: float = 0.01
 
 
 def identify_staged(
@@ -401,6 +449,7 @@ def identify_staged(
     *,
     constants: CoolingConstants = ONAF_MEDIUM_LARGE_POWER,
     shared: tuple[str, ...] = SHARED_BY_DEFAULT,
+    fixed: Mapping[str, float] | None = None,
     loss_ratio_R: float = 6.0,
     loss: str = "soft_l1",
     start: tuple[float, float, float, float] = (30.0, 6000.0, 15.0, 600.0),
@@ -426,6 +475,14 @@ def identify_staged(
     shared : parameters held equal across stages. See SHARED_BY_DEFAULT and
         the module docstring -- the default suits tank-fan staging and is
         wrong for directed-flow classes.
+    fixed : parameters HELD at a supplied value and never fitted, keyed by
+        `ThermalParams` field name in that field's own units (K, minutes).
+        Use this when the record cannot inform a parameter: a 10-minute log
+        samples a 7-minute winding transient less than once per time
+        constant, so tau_w is not estimable from it and letting the optimiser
+        chase it produces a value set by whichever bound or constraint it
+        reaches first. Holding it at the IEC 60076-7 Table 4 value is the
+        honest alternative, and the report says which parameters were held.
     loss_ratio_R : load loss / no-load loss, held fixed
     loss : robust loss for `least_squares`
     start : initial guess, applied to every stage
@@ -462,8 +519,36 @@ def identify_staged(
         raise ValueError("hot-spot reference timestamps fall outside the grid")
     cal_values = np.asarray(hotspot_refs.temperature_C, dtype=np.float64)
 
+    fixed = dict(fixed or {})
+    unknown = set(fixed) - set(_PARAM_ORDER)
+    if unknown:
+        raise ValueError(
+            f"fixed contains unknown parameter name(s) {sorted(unknown)}; "
+            f"expected any of {list(_PARAM_ORDER)}"
+        )
+    overlap = set(fixed) & set(shared)
+    if overlap:
+        raise ValueError(
+            f"parameter(s) {sorted(overlap)} appear in both `fixed` and `shared`; "
+            f"a held parameter is already common to every stage."
+        )
+    # Working units: K for the rises, seconds for the time constants.
+    fixed_working = {
+        name: (value * 60.0 if name.endswith("_min") else value)
+        for name, value in fixed.items()
+    }
+    for name, value in fixed.items():
+        low, high = PARAM_BOUNDS[name]
+        if not (low <= value <= high):
+            raise ValueError(
+                f"fixed[{name!r}] = {value} is outside the physical plausibility "
+                f"bounds [{low}, {high}]."
+            )
+    if len(fixed) == len(_PARAM_ORDER):
+        raise ValueError("every parameter is fixed; there is nothing to identify.")
+
     stages = tuple(sorted(set(int(v) for v in S)))
-    slots = _build_packing(stages, shared)
+    slots = _build_packing(stages, shared, tuple(fixed))
     counts = {s: int(np.sum(S == s)) for s in stages}
 
     notes: list[str] = []
@@ -491,7 +576,7 @@ def identify_staged(
 
     def residual(vector):
         try:
-            per_stage = _unpack(vector, slots, stages, loss_ratio_R)
+            per_stage = _unpack(vector, slots, stages, loss_ratio_R, fixed_working)
         except ValueError:
             # The optimiser stepped somewhere physically invalid; steer it back
             # rather than crashing the fit.
@@ -514,17 +599,41 @@ def identify_staged(
         elif abs(result.x[i] - upper[i]) <= 1e-3 * span:
             railed.append(f"{name}@upper(stage {stage_label})")
 
+    # A parameter can rail against a STRUCTURAL constraint as well as a box
+    # bound, and the loop above cannot see it. `ThermalParams` requires
+    # tau_w < tau_o, and `residual` returns a flat penalty wherever that is
+    # violated -- which makes the constraint an invisible wall in the cost
+    # surface. The optimiser walks tau_w up to the wall and stops against it,
+    # and the result was previously reported as a converged interior solution.
+    #
+    # Not hypothetical: on a 360 MVA ODAF field record, stage 3 returned
+    # tau_w = tau_o - 1e-6 min and was accepted. From other starts the
+    # optimiser finished ON the wall and `_unpack` raised a bare ValueError
+    # out of the middle of the fit instead of the designed refusal.
+    for stage_label, v in sorted(
+        _unpack_raw(result.x, slots, stages, fixed_working).items()
+    ):
+        tau_o_s, tau_w_s = v[1], v[3]
+        if tau_w_s >= (1.0 - STRUCTURAL_MARGIN) * tau_o_s:
+            railed.append(
+                f"tau_w_min@tau_o-constraint(stage {stage_label}: "
+                f"tau_w={tau_w_s / 60.0:.2f} min vs tau_o={tau_o_s / 60.0:.2f} min)"
+            )
+
     if result.status <= 0 or railed:
         raise RuntimeError(
             f"staged identification failed: status={result.status}, "
             f"railed={railed or 'none'}, message={result.message!r}.\n"
             "A railed solution is an optimiser artifact, not a measurement. Usual "
             "causes: a stage with too few samples, no load variation within a stage, "
-            "or `shared` set too loose for the data available."
+            "or `shared` set too loose for the data available. A parameter railed "
+            "against the tau_w < tau_o constraint means the winding branch has no "
+            "support in this record: the value reported is set by the constraint, "
+            "not measured."
         )
 
     params = StagedThermalParams(
-        per_stage=_unpack(result.x, slots, stages, loss_ratio_R),
+        per_stage=_unpack(result.x, slots, stages, loss_ratio_R, fixed_working),
         shared=shared, constants=constants,
     )
     final = residual(result.x)
@@ -536,5 +645,6 @@ def identify_staged(
         n_observations=(int(oil_index.size), int(cal_index.size)),
         stage_sample_counts=counts,
         railed_parameters=tuple(railed),
+        fixed_parameters=dict(fixed),
         warnings=tuple(notes),
     )

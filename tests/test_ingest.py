@@ -462,3 +462,74 @@ def test_template_explains_the_cooling_stage_column(tmp_path):
     text = write_template(tmp_path / "t2.csv").read_text(encoding="utf-8")
     assert "COOLING STAGE" in text
     assert "6.54" in text
+
+
+# --------------------------------------------------------------------------
+# Stuck input channels
+#
+# A channel pinned on one value is invisible to every other check in this
+# module: the row count is right, the timestamps are regular, the value is in
+# range and physically plausible. One reached a field campaign undetected -- a
+# load channel holding exactly 0.01 pu for the last 169.7 h of a record while
+# ambient still swung 12 K, top-oil still swung 11 K and the cooling control
+# kept switching fan stages -- and took the headline out-of-sample score with
+# it. The record was not of a transformer sitting idle; the channel had died.
+# --------------------------------------------------------------------------
+
+
+def _stuck_channel_frame(tmp_path, stuck_hours, total_hours=336.0, step_min=10.0):
+    """A clean record whose load channel freezes for the last `stuck_hours`."""
+    import numpy as np
+    import pandas as pd
+
+    n = int(total_hours * 60.0 / step_min)
+    t = pd.date_range("2026-01-01", periods=n, freq=f"{int(step_min)}min")
+    hours = np.arange(n) * step_min / 60.0
+    # An ordinary daily load cycle, rounded to two decimals as loggers do.
+    load = np.round(0.70 + 0.15 * np.sin(2 * np.pi * hours / 24.0), 2)
+    ambient = np.round(15.0 + 8.0 * np.sin(2 * np.pi * (hours - 6.0) / 24.0), 1)
+    frozen = hours > (total_hours - stuck_hours)
+    load[frozen] = 0.01
+    frame = pd.DataFrame({
+        "timestamp": t,
+        "load_pu": load,
+        "ambient_C": ambient,
+        # Temperatures keep moving: that is what makes the load channel a lie.
+        "top_oil_C": np.round(ambient + 30.0 + 3.0 * np.sin(2 * np.pi * hours / 24.0), 1),
+        "hotspot_C": np.round(ambient + 50.0 + 4.0 * np.sin(2 * np.pi * hours / 24.0), 1),
+    })
+    path = tmp_path / "stuck.csv"
+    frame.to_csv(path, index=False)
+    return path
+
+
+def test_a_stuck_load_channel_is_reported(tmp_path):
+    from corefield.ingest import STUCK_CHANNEL_HOURS, load_telemetry
+
+    path = _stuck_channel_frame(tmp_path, stuck_hours=STUCK_CHANNEL_HOURS + 24.0)
+    report = load_telemetry(path).report
+    stuck = [w for w in report.warnings if "holds one exact value" in w]
+    assert stuck, f"stuck channel not reported; warnings were {report.warnings}"
+    assert "load" in stuck[0]
+    assert "sentinel" in stuck[0]
+
+
+def test_a_stuck_channel_shows_up_in_the_printed_report(tmp_path):
+    from corefield.ingest import STUCK_CHANNEL_HOURS, load_telemetry
+
+    path = _stuck_channel_frame(tmp_path, stuck_hours=STUCK_CHANNEL_HOURS + 24.0)
+    assert "holds one exact value" in load_telemetry(path).report.report()
+
+
+def test_an_ordinary_flat_spell_is_not_called_stuck(tmp_path):
+    """A day and a half of genuinely constant load must not trip the check.
+
+    The longest plainly-genuine constant-load run in the field corpus is
+    34.8 h. Warning on that would make the check noise, and a check that
+    cries wolf is one the user learns to skip past.
+    """
+    from corefield.ingest import load_telemetry
+
+    path = _stuck_channel_frame(tmp_path, stuck_hours=34.8)
+    report = load_telemetry(path).report
+    assert not [w for w in report.warnings if "holds one exact value" in w]

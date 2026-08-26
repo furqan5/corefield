@@ -67,6 +67,7 @@ __all__ = [
     "REQUIRED_COLUMNS",
     "COLUMN_ALIASES",
     "TEMPLATE_COLUMNS",
+    "STUCK_CHANNEL_HOURS",
     "AmbientMissingError",
     "ValidationReport",
     "TelemetryFrame",
@@ -369,6 +370,37 @@ def _detect_quantisation(values: NDArray[np.float64]) -> float:
     return 0.0
 
 
+#: How long an input channel may hold one exact value before the record is
+#: called stuck rather than steady, in hours.
+#:
+#: (b) Engineering estimate from the only field corpus available: three
+#: directed-flow units, four clean segments logged every 10 minutes at two
+#: decimal places. The longest constant-load run that is plainly genuine is
+#: 34.8 h; the longest defective one is 169.8 h, a load channel pinned at
+#: 0.01 pu for the last week of a record while ambient still swung 12 K, the
+#: top-oil still swung 11 K and the cooling control kept switching fan
+#: stages. Nothing in the corpus falls between 35 h and 169 h, so 48 h sits
+#: in an empty gap rather than on a boundary. Revisit it against a wider
+#: corpus -- a unit genuinely held at constant load for three days would trip
+#: this, and that warning would be wrong.
+STUCK_CHANNEL_HOURS: float = 48.0
+
+
+def _stuck_run_hours(values: NDArray[np.float64], seconds: NDArray[np.float64]) -> float:
+    """Longest span [h] over which `values` holds one exact value.
+
+    Exact equality is deliberate. A channel that has genuinely settled still
+    dithers in its last logged digit; one that is reporting a stuck sentinel
+    does not move at all. Comparing with a tolerance would blur the two.
+    """
+    if values.size < 2:
+        return 0.0
+    change = np.flatnonzero(np.diff(values) != 0.0)
+    edges = np.concatenate(([0], change + 1, [values.size - 1]))
+    spans = seconds[edges[1:]] - seconds[edges[:-1]]
+    return float(spans.max() / 3600.0) if spans.size else 0.0
+
+
 def _count_load_events(time_s: NDArray[np.float64], load_pu: NDArray[np.float64]) -> int:
     """Count distinct load transitions.
 
@@ -624,6 +656,21 @@ def load_telemetry(
     load_min, load_max = float(np.nanmin(load_grid)), float(np.nanmax(load_grid))
     n_events = _count_load_events(grid, load_grid)
     coverage = 100.0 * float(np.isfinite(oil_grid).sum()) / grid.size
+
+    # A channel stuck on one value is not a measurement, and it is invisible
+    # to every other check here: the row count is right, the timestamps are
+    # regular, the value is in range. It reached the field campaign undetected
+    # and took the headline out-of-sample score with it.
+    for channel, series in (("load", load_grid), ("ambient", ambient_grid)):
+        held = _stuck_run_hours(series, grid)
+        if held >= STUCK_CHANNEL_HOURS:
+            warnings.append(
+                f"the {channel} channel holds one exact value for {held:.1f} h "
+                f"({100.0 * held * 3600.0 / max(seconds[-1], 1.0):.0f} % of the record). "
+                f"A stuck channel is a missing-data sentinel wearing a plausible number, "
+                f"not a steady operating point -- check it against the temperature "
+                f"channels before fitting or scoring anything on this span."
+            )
 
     if n_events == 0:
         warnings.append(
