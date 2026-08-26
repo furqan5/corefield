@@ -271,7 +271,8 @@ def _integrate_staged(
         oil_seg, hs_seg, state = _integrate(  # type: ignore[misc]
             dtor=p.delta_theta_or_K, tauo_s=p.tau_o_s,
             dthr=p.delta_theta_hr_K, tw_s=p.tau_w_s,
-            x=c.x, y=c.y, k11=c.k11, k21=c.k21, k22=c.k22, R=p.loss_ratio_R,
+            x=c.x, y=c.y, x1=c.x1, y1=c.y1, k11=c.k11, k21=c.k21, k22=c.k22,
+            R=p.loss_ratio_R,
             K_on=load_pu[lo:hi], K_half=load_half[lo:hi],
             A_on=ambient_C[lo:hi], A_half=ambient_half[lo:hi],
             dt=dt, solver="rk4", raw_initial=state, return_state=True,

@@ -107,6 +107,8 @@ __all__ = [
     "OD_MEDIUM_LARGE_POWER",
     "ThermalParams",
     "PARAM_BOUNDS",
+    "oil_exponent",
+    "winding_exponent",
     "InitialState",
     "ThermalTrajectory",
     "steady_top_oil_rise",
@@ -151,6 +153,19 @@ class CoolingConstants:
     k21: float
     k22: float
     name: str
+    #: Load-slope of the oil exponent, per unit of load: x(K) = x + x1*(K-1).
+    #: Zero reproduces the standard's fixed exponent exactly, and is the
+    #: default, so nothing changes unless a caller asks for it.
+    #:
+    #: WHY THIS EXISTS. Published fibre-optic measurements on a 400 MVA ONAF
+    #: unit give an oil exponent of 0.717, 0.766 and 0.846 over successive load
+    #: intervals from 0.65 to 1.60 pu -- it climbs with load rather than
+    #: sitting at the tabulated 0.8. Holding it fixed and extrapolating from
+    #: below nameplate under-predicts the hot spot at overload, in the unsafe
+    #: direction. See private/OVERLOAD_FINDING.md.
+    x1: float = 0.0
+    #: Load-slope of the winding exponent: y(K) = y + y1*(K-1). Same rationale.
+    y1: float = 0.0
 
     def __post_init__(self) -> None:
         for field_name in ("x", "y", "k11", "k21", "k22"):
@@ -158,6 +173,15 @@ class CoolingConstants:
             if not np.isfinite(value) or value <= 0.0:
                 raise ValueError(
                     f"CoolingConstants.{field_name} must be finite and > 0, got {value!r}"
+                )
+        # The slopes may be zero or negative -- a cooling system can plausibly
+        # become relatively more effective with load -- so only finiteness is
+        # required of them.
+        for field_name in ("x1", "y1"):
+            value = getattr(self, field_name)
+            if not np.isfinite(value):
+                raise ValueError(
+                    f"CoolingConstants.{field_name} must be finite, got {value!r}"
                 )
         if self.k21 < 1.0:
             # k21 < 1 would make the slow branch amplitude (k21-1)*dthr negative,
@@ -417,13 +441,32 @@ class ThermalTrajectory:
 # --------------------------------------------------------------------------
 
 
+def oil_exponent(
+    load_pu: NDArray[np.float64] | float, constants: CoolingConstants
+) -> NDArray[np.float64]:
+    """The oil exponent at a given load [-]: x(K) = x + x1*(K-1).
+
+    Constant at the tabulated value unless `constants.x1` is non-zero.
+    """
+    K = np.asarray(load_pu, dtype=np.float64)
+    return constants.x + constants.x1 * (K - 1.0)
+
+
+def winding_exponent(
+    load_pu: NDArray[np.float64] | float, constants: CoolingConstants
+) -> NDArray[np.float64]:
+    """The winding exponent at a given load [-]: y(K) = y + y1*(K-1)."""
+    K = np.asarray(load_pu, dtype=np.float64)
+    return constants.y + constants.y1 * (K - 1.0)
+
+
 def _loss_factor(
     load_pu: NDArray[np.float64] | float, params: ThermalParams, constants: CoolingConstants
 ) -> NDArray[np.float64]:
-    """f(K) = ((1 + R*K^2) / (1 + R))^x  [-], vectorised over load."""
+    """f(K) = ((1 + R*K^2) / (1 + R))^x(K)  [-], vectorised over load."""
     K = np.asarray(load_pu, dtype=np.float64)
     R = params.loss_ratio_R
-    return ((1.0 + R * K**2) / (1.0 + R)) ** constants.x
+    return ((1.0 + R * K**2) / (1.0 + R)) ** oil_exponent(K, constants)
 
 
 def steady_top_oil_rise(
@@ -458,7 +501,7 @@ def steady_hotspot_gradient(
     purely transient phenomenon and does not appear here.
     """
     K = np.asarray(load_pu, dtype=np.float64)
-    return params.delta_theta_hr_K * K**constants.y
+    return params.delta_theta_hr_K * K ** winding_exponent(K, constants)
 
 
 def steady_temperatures(
@@ -578,6 +621,8 @@ def _integrate(
     initial_state: "InitialState | None" = None,
     raw_initial: tuple[float, float, float] | None = None,
     return_state: bool = False,
+    x1: float = 0.0,
+    y1: float = 0.0,
 ) -> tuple[NDArray[np.float64], NDArray[np.float64]] | tuple[
     NDArray[np.float64], NDArray[np.float64], tuple[float, float, float]
 ]:
@@ -609,10 +654,12 @@ def _integrate(
 
     # Precompute the two load-dependent drive terms. Same values as computing
     # them inside the loop, just not 4n times over.
-    fK_on = ((1.0 + R * K_on**2) / (1.0 + R)) ** x
-    fK_half = ((1.0 + R * K_half**2) / (1.0 + R)) ** x
-    Ky_on = K_on**y
-    Ky_half = K_half**y
+    # Exponents may vary with load. x1 = y1 = 0 gives the fixed-exponent form
+    # exactly, which is the default everywhere.
+    fK_on = ((1.0 + R * K_on**2) / (1.0 + R)) ** (x + x1 * (K_on - 1.0))
+    fK_half = ((1.0 + R * K_half**2) / (1.0 + R)) ** (x + x1 * (K_half - 1.0))
+    Ky_on = K_on ** (y + y1 * (K_on - 1.0))
+    Ky_half = K_half ** (y + y1 * (K_half - 1.0))
 
     inv_tau_oil = 1.0 / (k11 * tauo_s)
     inv_tau_fast = 1.0 / (k22 * tw_s)
@@ -629,7 +676,8 @@ def _integrate(
         s1 = float(amp_fast * Ky_on[0])
         s2 = float(amp_slow * Ky_on[0])
     else:
-        prior_Ky = float(initial_state.prior_load_pu) ** y
+        prior_K = float(initial_state.prior_load_pu)
+        prior_Ky = prior_K ** (y + y1 * (prior_K - 1.0))
         s0 = float(initial_state.top_oil_C)
         s1 = float(amp_fast * prior_Ky)
         s2 = float(amp_slow * prior_Ky)
@@ -690,6 +738,8 @@ def _integrate_reference(
     A_on: NDArray[np.float64],
     A_half: NDArray[np.float64],
     dt: float,
+    x1: float = 0.0,
+    y1: float = 0.0,
 ) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
     """Explicit RK4 loop, kept as the reference the fast path is checked against.
 
@@ -704,10 +754,12 @@ def _integrate_reference(
     top_oil = np.empty(n, dtype=np.float64)
     hotspot = np.empty(n, dtype=np.float64)
 
-    fK_on = ((1.0 + R * K_on**2) / (1.0 + R)) ** x
-    fK_half = ((1.0 + R * K_half**2) / (1.0 + R)) ** x
-    Ky_on = K_on**y
-    Ky_half = K_half**y
+    # Exponents may vary with load. x1 = y1 = 0 gives the fixed-exponent form
+    # exactly, which is the default everywhere.
+    fK_on = ((1.0 + R * K_on**2) / (1.0 + R)) ** (x + x1 * (K_on - 1.0))
+    fK_half = ((1.0 + R * K_half**2) / (1.0 + R)) ** (x + x1 * (K_half - 1.0))
+    Ky_on = K_on ** (y + y1 * (K_on - 1.0))
+    Ky_half = K_half ** (y + y1 * (K_half - 1.0))
 
     inv_tau_oil = 1.0 / (k11 * tauo_s)
     inv_tau_fast = 1.0 / (k22 * tw_s)
@@ -913,6 +965,8 @@ def simulate(
         tw_s=params.tau_w_s,
         x=constants.x,
         y=constants.y,
+        x1=constants.x1,
+        y1=constants.y1,
         k11=constants.k11,
         k21=constants.k21,
         k22=constants.k22,

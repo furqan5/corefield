@@ -166,7 +166,8 @@ def _observation_jacobian(
         oil, hs = _integrate(
             dtor=float(vector[0]), tauo_s=float(vector[1]),
             dthr=float(vector[2]), tw_s=float(vector[3]),
-            x=constants.x, y=constants.y, k11=constants.k11,
+            x=constants.x, y=constants.y, x1=constants.x1, y1=constants.y1,
+            k11=constants.k11,
             k21=constants.k21, k22=constants.k22, R=params.loss_ratio_R,
             K_on=K, K_half=K_half, A_on=A, A_half=A_half, dt=dt, solver="rk4",
         )

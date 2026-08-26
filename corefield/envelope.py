@@ -289,7 +289,8 @@ def peak_hotspot_at_load(
     top_oil, hotspot = _integrate(
         dtor=params.delta_theta_or_K, tauo_s=params.tau_o_s,
         dthr=params.delta_theta_hr_K, tw_s=params.tau_w_s,
-        x=constants.x, y=constants.y, k11=constants.k11,
+        x=constants.x, y=constants.y, x1=constants.x1, y1=constants.y1,
+        k11=constants.k11,
         k21=constants.k21, k22=constants.k22, R=params.loss_ratio_R,
         K_on=load, K_half=load, A_on=ambient, A_half=ambient_half,
         dt=dt_s, solver="rk4", initial_state=initial_state,

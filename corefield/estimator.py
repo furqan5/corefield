@@ -394,13 +394,14 @@ def identify(
             raise ValueError(f"ambient_C_half shape {A_half.shape} != time_s shape {t.shape}")
 
     x, y = constants.x, constants.y
+    x1, y1 = constants.x1, constants.y1
     k11, k21, k22 = constants.k11, constants.k21, constants.k22
 
     def _model(vector: NDArray[np.float64]) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
         return _integrate(
             dtor=float(vector[0]), tauo_s=float(vector[1]),
             dthr=float(vector[2]), tw_s=float(vector[3]),
-            x=x, y=y, k11=k11, k21=k21, k22=k22, R=loss_ratio_R,
+            x=x, y=y, x1=x1, y1=y1, k11=k11, k21=k21, k22=k22, R=loss_ratio_R,
             K_on=K, K_half=K_half, A_on=A, A_half=A_half, dt=dt, solver="rk4",
         )
 

@@ -303,3 +303,75 @@ def test_param_bounds_cover_the_synthetic_unit():
     for name, (low, high) in PARAM_BOUNDS.items():
         value = getattr(TRUTH_PARAMS, name)
         assert low <= value <= high, f"{name}={value} outside [{low}, {high}]"
+
+
+# --------------------------------------------------------------------------
+# Load-dependent cooling exponents
+#
+# Published fibre-optic measurements on a 400 MVA ONAF unit give an oil
+# exponent of 0.717, 0.766 and 0.846 over successive load intervals from 0.65
+# to 1.60 pu: it climbs with load rather than sitting at the tabulated 0.8.
+# Holding it fixed and extrapolating from below nameplate under-predicts the
+# hot spot at overload, in the unsafe direction.
+#
+# The slopes default to zero, so every pre-existing result must be unchanged.
+# --------------------------------------------------------------------------
+
+
+def test_zero_slope_reproduces_the_fixed_exponent_exactly():
+    """The default must be bit-identical to the tabulated-exponent model."""
+    from corefield.iec60076_7 import ONAF_MEDIUM_LARGE_POWER, oil_exponent, winding_exponent
+
+    c = ONAF_MEDIUM_LARGE_POWER
+    assert c.x1 == 0.0 and c.y1 == 0.0
+    for K in (0.3, 1.0, 1.7):
+        assert float(oil_exponent(K, c)) == c.x
+        assert float(winding_exponent(K, c)) == c.y
+
+
+def test_the_slope_moves_the_exponent_in_the_measured_direction():
+    from corefield.iec60076_7 import CoolingConstants, oil_exponent
+
+    c = CoolingConstants(x=0.8, y=1.3, k11=0.5, k21=2.0, k22=2.0,
+                         name="sloped", x1=0.21)
+    # Below nameplate the exponent is lower, above it higher -- which is the
+    # direction that stops the model reading low at overload.
+    assert float(oil_exponent(0.65, c)) < c.x
+    assert float(oil_exponent(1.60, c)) > c.x
+    assert float(oil_exponent(1.0, c)) == pytest.approx(c.x)
+
+
+def test_a_positive_oil_slope_raises_the_predicted_overload_temperature():
+    """The whole point: at overload the sloped model must read HIGHER.
+
+    Reading low at overload is the unsafe failure this parameter exists to
+    address, so the direction is the property worth pinning.
+    """
+    from corefield.iec60076_7 import (CoolingConstants, ThermalParams,
+                                      steady_top_oil_rise)
+
+    flat = CoolingConstants(x=0.8, y=1.3, k11=0.5, k21=2.0, k22=2.0, name="flat")
+    sloped = CoolingConstants(x=0.8, y=1.3, k11=0.5, k21=2.0, k22=2.0,
+                              name="sloped", x1=0.21)
+    p = ThermalParams(delta_theta_or_K=38.0, tau_o_min=150.0,
+                      delta_theta_hr_K=20.0, tau_w_min=7.0)
+    assert steady_top_oil_rise(1.5, p, sloped) > steady_top_oil_rise(1.5, p, flat)
+    # At nameplate the two must agree, since x(1) = x by construction.
+    assert steady_top_oil_rise(1.0, p, sloped) == pytest.approx(
+        steady_top_oil_rise(1.0, p, flat))
+    # BELOW nameplate the sloped model also reads higher, which is not what
+    # intuition suggests and is worth pinning so nobody "corrects" it later.
+    # The loss factor is ((1 + R K^2)/(1 + R))^x, whose base is LESS than one
+    # for K < 1; raising a base below one to a smaller exponent gives a larger
+    # result. So a positive slope lifts the curve on both sides of nameplate
+    # and pivots about it, rather than tilting it.
+    assert steady_top_oil_rise(0.7, p, sloped) > steady_top_oil_rise(0.7, p, flat)
+
+
+def test_slopes_may_be_negative_but_must_be_finite():
+    from corefield.iec60076_7 import CoolingConstants
+
+    CoolingConstants(x=0.8, y=1.3, k11=0.5, k21=2.0, k22=2.0, name="neg", x1=-0.1)
+    with pytest.raises(ValueError, match="x1 must be finite"):
+        CoolingConstants(x=0.8, y=1.3, k11=0.5, k21=2.0, k22=2.0,
+                         name="bad", x1=float("nan"))
