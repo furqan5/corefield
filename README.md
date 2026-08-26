@@ -250,13 +250,51 @@ below 0.02 pu, which is why the fit never saw it and the score absorbed all of i
 Three things this does **not** establish, all of which matter more than the number:
 
 - **Nothing above 0.90 pu.** The whole three-unit corpus tops out at 0.93 pu. The product is a
-  loading envelope *above* nameplate; this validates interpolation, not that.
+  loading envelope *above* nameplate; this validates interpolation, not that. **That gap has
+  since been tested against published overload data — see the next section, and the result is
+  not good.**
 - **Three of four parameters.** τ_w is held at the tabulated value, not measured — at 10-minute
   logging it is not estimable, and the package now says so rather than reporting a bound as a
   measurement.
 - **One unit.** A second refused identification outright — 0.10 pu of load variation across
   17 days is not enough excitation — and a third is 96 % missing hot-spot. The refusals are the
   designed behaviour, and they are also the reason there is no independent replication here.
+
+## Above nameplate — the method fails, and the fix needs data you do not have
+
+**27 Aug 2026.** Nordman and Lahtinen (*IEEE Trans. Power Del.* 18(1), 2003) publish fibre-optic
+measurements on a 400 MVA ONAF unit at 0.65, 1.00, 1.29 and 1.60 pu. Identifying below nameplate
+and predicting the overload points is the test this project had never been able to run.
+
+| | hot-spot error at 1.60 pu |
+|---|---|
+| per-unit identification, fixed exponent | **−6.35 K — reads LOW** |
+| the generic tabulated exponents | +5.28 K — reads high |
+
+**It does not beat the table, and it errs in the unsafe direction.** A model that under-predicts
+during an overload withholds the warning it exists to give.
+
+**Why:** the oil exponent is not constant. Measured over successive load intervals it is 0.717,
+0.766, 0.846 — climbing with load, while the model holds one value. The tabulated 0.8 sits
+mid-range, which is why a crude average wins. Identifying the wrong-end value *more accurately*
+makes the extrapolation *worse*.
+
+**The fix, and its price.** `CoolingConstants` now carries `x1` and `y1`, the load-slopes of the
+two exponents, defaulting to zero so nothing else changes. Exploiting f(1)=1 — true for any
+exponent — makes the two amplitudes measurements at nameplate rather than estimates, and with
+both slopes free the held-out 1.60 pu error falls to **−2.63 K hot spot, −0.97 K top oil**.
+59 % of the unsafe bias removed, with the fitted exponents converging on the tabulated values at
+high load.
+
+But that fit uses a 1.29 pu observation. **The slopes are not identifiable from service data**:
+their two sensitivities differ only by the factor (K−1), so over the narrow band a working
+transformer occupies, ρ(x₀,x₁) = 0.995 and the estimator refuses — correctly. Run
+`private/exponent_identifiability.py` (no private data) to see the bound.
+
+**So the honest claim is narrower than the one this project started with:** accurate at and below
+nameplate from data a utility already has; accurate above it only with a designed load excursion.
+The specification for that excursion — range, number of levels, dwell, instrumentation — is
+derived from these results and is the practical output of the failure.
 
 ## Limitations
 

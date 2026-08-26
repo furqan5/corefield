@@ -133,6 +133,31 @@ That is a weaker standard than everything else in this file and is marked as suc
 | 65 | Nothing in the three-unit corpus exceeds 0.93 pu, so the overload extrapolation is unvalidated | **(a)**, not reader-reproducible | private field record (`recon.py`), withheld |
 | 66 | A second unit refused identification — 0.10 pu of load variation across 17 days | **(a)**, not reader-reproducible | private field record (`r_and_tr2.py`), withheld |
 
+## Above nameplate — the regime the loading envelope exists to inform
+
+Source: Nordman and Lahtinen, *IEEE Trans. Power Del.* 18(1), 2003, pp. 107–112 — published
+fibre-optic measurements on a 400/400/125 MVA ONAF unit at 0.65, 1.00, 1.29 and 1.60 pu. The
+paper is copyrighted; its tables are not reproduced here.
+
+| # | Claim | Label | Where verified |
+|---|---|---|---|
+| 72 | Identified below nameplate and extrapolated, the fixed-exponent model reads **6.35 K low** at 1.60 pu — the unsafe direction | **(a)** | private overload record (`nordman_overload.py`), withheld |
+| 73 | It does **not** beat the generic table it aims to replace: 4.64 K against 4.21 K RMSE across the two held-out overload points | **(a)** | same |
+| 74 | The measured oil exponent is not constant: 0.717, 0.766, 0.846 over successive load intervals | **(a)** | same |
+| 75 | Freeing the load-slope on two sub-nameplate points is **under-determined** and the fit refuses | **(a)** | `overload_refit.py`, withheld |
+| 76 | Fitting a load-slope across the load at which the hot spot changes winding costs **8 K**, worse than making no correction | **(a)** | same |
+| 77 | With amplitudes measured at nameplate (f(1)=1 for any exponent) and both slopes free, the held-out 1.60 pu error is **−2.63 K** hot spot, **−0.97 K** top oil | **(a)** | `overload_anchored.py`, withheld |
+| 78 | That is 59 % of the unsafe bias removed, with x(1.60)=0.790 and y(1.60)=1.369 against tabulated 0.8 and 1.3 | **(a)** | same |
+| 79 | Claim 77 uses a 1.29 pu observation, so it is evidence for a commissioning excursion, **not** for identification from service data | **(a)** | Statement about the experiment's design, verifiable by inspection |
+| 80 | Every fit in claims 72–78 is exactly determined and carries no residual or error bars | **(a)** | Follows from parameter and observation counts |
+| 81 | ρ(x₀,x₁) = 0.995 over an in-service load band; sd(x₁) is ~4× the parameter. Over 0.60–1.30 pu it is 5 % | **(a)** | `exponent_identifiability.py` — reader-reproducible, no private data |
+| 82 | The two exponent sensitivities differ only by the factor (K−1), so load range alone separates them | **(a)** | Analytic; derivable from the model |
+| 83 | Load-dependent exponents are implemented and default to zero, reproducing the fixed form exactly | **(a)** | `test_physics.py::test_zero_slope_reproduces_the_fixed_exponent_exactly` |
+| 84 | A positive slope raises the predicted rise on **both** sides of nameplate, because the loss factor's base is below one for K < 1 | **(a)** | `test_physics.py::test_a_positive_oil_slope_raises_the_predicted_overload_temperature` |
+
+**Not claimed:** that CoreField can compute a safe loading envelope above nameplate. Four separate
+tests say it cannot, today, from service data alone.
+
 ## Package behaviour found and fixed by the field data
 
 | # | Claim | Label | Where verified |
