@@ -102,7 +102,7 @@ Registered now, unscored, so that they can be scored honestly later.
 
 | # | Prediction | To be scored by |
 |---|---|---|
-| F1 | ~~On real telemetry with a measured hot spot, trajectory RMSE will fall between 1 and 4 K~~ — **REVISED 25 Aug 2026, before scoring, to 2–4 K.** See note below | First field-validation run |
+| F1 | ~~On real telemetry with a measured hot spot, trajectory RMSE will fall between 1 and 4 K~~ — **REVISED 25 Aug 2026, before scoring, to 2–4 K.** **SCORED 26 Aug 2026: MISS. See below.** | First field-validation run |
 | F2 | The identified τ_o on a real unit will differ from its nameplate/heat-run value by more than 10 %, because nameplate values describe a new transformer and installed units have aged and been re-cooled | First field-validation run |
 | F3 | Ambient sourced from a weather station >10 km away will cost less than 0.5 K of trajectory RMSE relative to an on-site sensor, because ambient enters through a ~75-minute low-pass | A paired-sensor comparison |
 | F4 | On a real record, the binding constraint on the loading envelope will be top-oil rather than hot-spot more often than not, because utility oil limits are set conservatively | First 20 envelope computations on real data |
@@ -128,3 +128,35 @@ Revising a registered prediction is legitimate only if the revision is recorded 
 scoring and with its reasoning attached. Re-reading a prediction charitably after the result is
 in is not revision, it is retrofitting, and it is the failure this ledger exists to prevent.
 The original wording is struck through above rather than deleted.
+
+### F1 scored, 26 Aug 2026 — MISS, on both readings
+
+First field validation, 360 MVA ODAF unit, fit on 74 days, validated on 42 days never seen.
+Out-of-sample hot-spot RMSE:
+
+| reading | result | against the 2–4 K band |
+|---|---|---|
+| every sample scored | **7.91 K** | outside, too high |
+| stuck-channel window rejected, τ_w tabulated | **1.54 K** | outside, too low |
+
+**Both are misses and both are recorded as misses.** The band was narrowed to 2–4 K on 25 Aug
+precisely to make it falsifiable in both directions, and it was falsified downward. Scoring the
+second row as a hit would require reading "2–4 K" as "no worse than 4 K", which is the charitable
+re-reading the paragraph above forbids.
+
+What separates the two rows is a data finding, not a tuning pass: the final 7.07 days of the
+validation segment hold the load channel at exactly one value while the thermal channels keep
+moving. The rejection rule was stated before the score and rejects 0.00 % of the fitting segment.
+Full reasoning in the private field-validation record; summary in the README.
+
+**What the miss says about the ledger's own method.** The revision to 2–4 K was argued from a
+benchmark ladder in which "dynamic rating app after per-asset calibration" already sat at
+**< 1.0 K**. That row was in the table, and the band was still set to exclude it. The reasoning
+attached to the revision — "2–4 K is where the evidence points for a calibrated physical model" —
+read the ladder's *middle* rather than its *best*, and gave no argument for why this method should
+land there rather than nearer the calibrated-app row. A prediction can be recorded honestly, in
+advance, with its reasoning attached, and still be reasoned badly. That is worth more than the
+result it mis-called.
+
+**F2 is not yet scorable.** No nameplate or heat-run τ_o was supplied with the data, so there is
+nothing to difference against. Requested; unanswered.

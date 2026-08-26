@@ -161,6 +161,24 @@ optimiser artifact that a caller cannot distinguish from a measurement. During t
 history an independent implementation railed its optimiser in 9 of 9 runs and reported the result
 as evidence of an identifiability problem in the physics; it was an implementation failure.
 
+**A bound is not only a box bound.** `ThermalParams` requires τ_w < τ_o, and the staged residual
+returns a flat penalty where that is violated — which makes the constraint an invisible wall in
+the cost surface. The optimiser can walk τ_w up to that wall and stop, and until 26 Aug 2026 such
+a solution was reported as converged and interior. Field data caught it: a 360 MVA ODAF unit
+returned τ_w = τ_o − 1e-6 min and was accepted. `identify_staged` now detects the constraint
+boundary as well as the box bounds, names the stage, and refuses.
+
+**It will not chase a parameter the data cannot inform.** `identify_staged(..., fixed={...})`
+holds a parameter at a supplied value, removes it from the optimiser, and reports it as
+`HELD, NOT IDENTIFIED` rather than as a measurement. This is the intended response to the case
+above: a 10-minute log samples a 7-minute winding transient less than once per time constant, so
+τ_w is not estimable from it and the honest move is the tabulated value, declared as tabulated.
+
+**It will not accept a channel that has stopped moving.** A load or ambient channel pinned on one
+exact value for `STUCK_CHANNEL_HOURS` (48 h) raises a warning from `load_telemetry`. Such a
+channel is invisible to every other check — the row count is right, the timestamps are regular,
+the value is in range — and one cost this project its headline field result for a day.
+
 **It will not interpolate observations.** Load and ambient are model *inputs* and are
 interpolated onto the integration grid. Top-oil is an *observation* and is not — interpolating it
 would invent measurements and correlate their noise, making the residual RMSE flatter than the
@@ -205,13 +223,50 @@ channel combined is ±40 % of winding height; two probes inside the winding give
 
 ![Hot-spot location is invariant to every external measurement](docs/hotspot_location_invariance.png)
 
+## First field validation
+
+**26 Aug 2026.** Three ODAF transformer records were supplied privately by their owner. The data
+is not ours to publish and is not in this repository; the results are reportable and are below.
+
+One unit carried enough thermal excitation to identify. Fit on 74 days, validated on 42 days the
+fit never saw:
+
+| | out-of-sample hot-spot RMSE |
+|---|---|
+| every sample scored | 7.91 K |
+| **stuck-channel window rejected, τ_w held at IEC Table 4** | **1.54 K** |
+
+Top-oil out-of-sample 1.31 K, over 5 029 observations on 35 unseen days. The operational criterion
+put to this project by an engineer at the supplying utility is RMSE ≤ 2 °C out-of-sample.
+
+**The gap between those two rows is the whole result, and it is a data finding, not a tuning
+pass.** The final 7.07 days of the validation segment carry a load channel holding exactly one
+value, 0.01 pu — `np.unique` returns a single element — while ambient still swings 12 K, top-oil
+still swings 11 K, and the cooling control keeps switching fan stages. At a genuine 0.01 pu the
+steady oil rise would be Δθ_or/(1+R) ≈ 6 K; it sits at 22 K for a week. The thermal channels are
+alive and the load channel is stuck at a floor value. The fitting segment contains **zero** samples
+below 0.02 pu, which is why the fit never saw it and the score absorbed all of it.
+
+Three things this does **not** establish, all of which matter more than the number:
+
+- **Nothing above 0.90 pu.** The whole three-unit corpus tops out at 0.93 pu. The product is a
+  loading envelope *above* nameplate; this validates interpolation, not that.
+- **Three of four parameters.** τ_w is held at the tabulated value, not measured — at 10-minute
+  logging it is not estimable, and the package now says so rather than reporting a bound as a
+  measurement.
+- **One unit.** A second refused identification outright — 0.10 pu of load variation across
+  17 days is not enough excitation — and a third is 96 % missing hot-spot. The refusals are the
+  designed behaviour, and they are also the reason there is no independent replication here.
+
 ## Limitations
 
 **Read this section before quoting anything from this repository.**
 
-1. **Everything here is synthetic. There is no field validation whatsoever.** Every parameter
-   recovery, every RMSE, every gate verdict was computed against a truth model this package also
-   generated. The estimator has never seen a real transformer.
+1. **One field validation, on one unit, below nameplate.** See the section above. Everything
+   else here is synthetic: every parameter recovery, every gate verdict was computed against a
+   truth model this package also generated. The field result covers a single 360 MVA ODAF unit
+   over 0.04–0.90 pu, so it validates interpolation and says nothing about the overload
+   extrapolation the loading envelope performs.
 2. **Model C is structure-matched to the synthetic truth.** The mismatch test killed models A and
    B; it did not test C. The day-C result certifies parameter-error propagation under
    extrapolation — it does not certify structural risk on a real unit whose physics may differ

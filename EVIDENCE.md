@@ -114,19 +114,54 @@ The README quotes the reproduced value, not the published one.
 | 56 | The fast integrator is an exact restatement of the RK4 loop | **(a)** | `test_physics.py::test_fast_integrator_matches_reference_loop` (agrees to <1e-10 K) |
 | 57 | Runs CPU-only in well under 2 GB | **(a)** | Measured 24 Aug 2026: **136.6 MiB process RSS**, 52.3 MiB peak Python allocation, running the day-C comparison plus three corruption scenarios. Against the 2 GB budget in CLAUDE.md that is a factor of ~15 margin |
 
+## First field validation
+
+The underlying data was supplied privately, is not in this repository, and may not be
+redistributed. Results are reportable. These claims are therefore **(a) but not
+reader-reproducible** — a reader can check the reasoning and the code paths, not the numbers.
+That is a weaker standard than everything else in this file and is marked as such.
+
+| # | Claim | Label | Where verified |
+|---|---|---|---|
+| 58 | Out-of-sample hot-spot RMSE **1.54 K** over 35 unseen days, 5 029 observations, τ_w held at Table 4 | **(a)**, not reader-reproducible | private field record (`final_tr3.py`), withheld |
+| 59 | The same fit scores **7.91 K** when the stuck-channel window is included | **(a)**, not reader-reproducible | private field record (`clean_validation.py`), withheld |
+| 60 | The rejected window holds load at exactly one value (0.01 pu) for 7.07 days while ambient swings 12 K, top-oil swings 11 K and the fan stage keeps switching | **(a)**, not reader-reproducible | private field record (`outage_check.py`), withheld |
+| 61 | A transformer genuinely at 0.01 pu would show a steady oil rise of Δθ_or/(1+R) ≈ 6 K, not the measured 22 K | **(b)** | Follows from the model with the identified Δθ_or and the assumed R = 6 |
+| 62 | The out-of-sample error is not seasonal: a within-segment split, same season, still shows it | **(a)**, not reader-reproducible | private field record (`transfer_test.py`), withheld |
+| 63 | The measured quasi-steady winding exponent is y ≈ 0.94, against Table 4's 2.0 for OD | **(a)**, not reader-reproducible | private field record (`gradient_check.py`), withheld. **Caveat:** 5 552 of 6 576 points sit in one load bin — direction solid, value not |
+| 64 | Loss ratio R is not load-bearing: out-of-sample RMSE moves 1.43 → 1.47 K across R = 5…10 | **(a)**, not reader-reproducible | private field record (`r_and_tr2.py`), withheld |
+| 65 | Nothing in the three-unit corpus exceeds 0.93 pu, so the overload extrapolation is unvalidated | **(a)**, not reader-reproducible | private field record (`recon.py`), withheld |
+| 66 | A second unit refused identification — 0.10 pu of load variation across 17 days | **(a)**, not reader-reproducible | private field record (`r_and_tr2.py`), withheld |
+
+## Package behaviour found and fixed by the field data
+
+| # | Claim | Label | Where verified |
+|---|---|---|---|
+| 67 | The staged estimator accepted solutions railed against the τ_w < τ_o constraint, reporting them as converged and interior | **(a)** | Fixed 26 Aug 2026; `test_staged.py::test_a_solution_pressed_against_the_tau_w_constraint_is_refused` |
+| 68 | From some starts the same condition raised a bare `ValueError` out of `_unpack` instead of the designed refusal | **(a)** | Same fix; same test |
+| 69 | `fixed=` holds a parameter, excludes it from the optimiser, and reports it as held rather than identified | **(a)** | `test_staged.py::test_a_fixed_parameter_is_held_exactly_and_declared` |
+| 70 | A channel pinned on one exact value passes every other ingest check | **(a)** | `test_ingest.py::test_a_stuck_load_channel_is_reported` |
+| 71 | `STUCK_CHANNEL_HOURS = 48` sits in an empty gap in the corpus: longest genuine constant-load run 34.8 h, longest defective run 169.8 h | **(b)** | Measured over three units, four segments. A unit genuinely held flat for three days would trip it wrongly |
+
 ## Limitations section
 
 Every claim in the README's Limitations section is **(a)** — each is a statement that something
-has *not* been done, verifiable by inspection of this repository. Specifically: no field data,
-one synthetic unit, Model C structure-matched to its own truth, IEC text unverified, corruption
-magnitudes estimated, uncertainty band parameter-only, WTI bias tested only as a constant offset,
-and the observability model simplified.
+has *not* been done, verifiable by inspection of this repository. Specifically: one field
+validation on one unit below nameplate and otherwise synthetic data, one synthetic unit, Model C
+structure-matched to its own truth, IEC text unverified, corruption magnitudes estimated,
+uncertainty band parameter-only, WTI bias tested only as a constant offset, and the observability
+model simplified.
 
 ## What is NOT claimed anywhere
 
 Recorded so that absence is deliberate rather than accidental:
 
-- **No accuracy claim against a real transformer.** None exists.
+- **No accuracy claim against a real transformer that a reader can reproduce.** One field result
+  exists (claims 58–66) and its data may not be redistributed, so a reader can audit the method
+  and the reasoning but not re-derive the number. It covers one unit, over 0.04–0.90 pu, with
+  three of four parameters identified and the fourth tabulated.
+- **No validated claim about loading above nameplate.** The loading envelope extrapolates past
+  the load hull of every record this project has seen. Claim 65.
 - **No comparison against commercial winding-temperature indicators.** A "±5–15 K" figure appears
   in the legacy v1 report with **no citation anywhere** (AUDIT.md §5.2). It is the denominator of
   an attractive pitch line and it is unsourced, so it does not appear in the README, the demo, or
