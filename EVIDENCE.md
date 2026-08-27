@@ -155,8 +155,26 @@ paper is copyrighted; its tables are not reproduced here.
 | 83 | Load-dependent exponents are implemented and default to zero, reproducing the fixed form exactly | **(a)** | `test_physics.py::test_zero_slope_reproduces_the_fixed_exponent_exactly` |
 | 84 | A positive slope raises the predicted rise on **both** sides of nameplate, because the loss factor's base is below one for K < 1 | **(a)** | `test_physics.py::test_a_positive_oil_slope_raises_the_predicted_overload_temperature` |
 
-**Not claimed:** that CoreField can compute a safe loading envelope above nameplate. Four separate
-tests say it cannot, today, from service data alone.
+**Not claimed:** that CoreField can compute a safe loading envelope above nameplate from service
+data alone. Four separate tests say it cannot.
+
+## Transient overload — where the structure wins
+
+| # | Claim | Label | Where verified |
+|---|---|---|---|
+| 85 | For a 0.3 → 2.5 pu step held 20 min, the loading guides give R₂₀ = 0.18 (IEC) and 0.23 (IEEE) against a measured 0.56; the corresponding hot spots are 79 and 89 °C against 156 °C | **(a)**, not reader-reproducible | Published tables; private record (`transient_overload.py`) |
+| 86 | This package gives R₂₀ = 0.519 and 160 °C — **89 % of the guides' shortfall recovered, erring 4 K HIGH (conservative)** | **(a)**, not reader-reproducible | same |
+| 87 | On the second winding it over-corrects: 0.487 against a measured 0.39, +13 K | **(a)**, not reader-reproducible | same |
+| 88 | R₂₀ is strongly sensitive to τ_w (0.65→0.23 over 2–40 min), to k21 (0.37→0.66 over 1–3) and to k11 | **(a)**, not reader-reproducible | same. **An earlier written interpretation claimed the opposite and was wrong** |
+| 89 | Inverting the measured R₂₀ gives k21 = 2.29 (120 kV) and 1.25 (410 kV) against a tabulated 2.0 | **(a)**, not reader-reproducible | same. Inherits the tabulated τ_w, and the two windings disagree — quote as a range |
+| 90 | k21 cancels exactly from the steady-state gradient, so no steady record at any load informs it | **(a)** | Analytic: branches settle to k21·g and (k21−1)·g, difference g |
+| 91 | A step sampled through the overshoot bounds k21 to 1.5 %; the same step sampled after settling gives 121 %; constant load gives infinity | **(a)** | `test_crlb.py::test_k21_is_identifiable_from_a_step_sampled_through_the_overshoot` and siblings |
+| 92 | The published max-of-two-windings gradient shows local exponents 1.12, 0.68, 1.67 — a handover detected at 1.14 pu; one winding tracked throughout gives 1.16, 1.30, 1.67 and is not flagged | **(a)** | `test_observability.py::test_a_winding_handover_is_detected` |
+| 93 | Six settled load levels give a p95 prediction error of 2.21 K at an unseen 1.45 pu; sixteen give 1.82 K | **(b)** | Simulation, 200 seeds, σ = 0.5 K (`excursion_levels.py`) |
+| 94 | The same at ten levels: a 0.15 pu hull gives 73.2 K, a 0.90 pu hull gives 1.15 K. **Range dominates level count by ~64× against ~1.2×** | **(b)** | same |
+
+**Still not claimed:** y1 identified on any real unit; k22 separated from k21; an explanation for
+the 410 kV k21 of 1.25; anything about moisture or insulation life.
 
 ## Package behaviour found and fixed by the field data
 

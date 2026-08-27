@@ -296,6 +296,35 @@ nameplate from data a utility already has; accurate above it only with a designe
 The specification for that excursion — range, number of levels, dwell, instrumentation — is
 derived from these results and is the practical output of the failure.
 
+### The transient half, where the structure wins decisively
+
+The same source makes a sharper claim about *dynamics*: hot spots rise faster in the first hour
+of overload than the guides predict, so the guides are "not applicable for short time emergency
+loading". That is the regime a dynamic loading envelope is sold into, and it is testable from the
+paper's tabulated R₂₀ values without touching a figure.
+
+For a 0.3 → 2.5 pu step held 20 minutes, scored on the ratio of the 20-minute rise to the settled
+rise:
+
+| | R₂₀ | hot spot at 20 min |
+|---|---|---|
+| IEC principles | 0.18 | 79 °C |
+| IEEE principles | 0.23 | 89 °C |
+| **this package** | **0.52** | **160 °C** |
+| **measured** | **0.56** | **156 °C** |
+
+**The guides under-predict by 67–77 K. This package is 4 K high — the conservative direction**,
+recovering 89 % of their shortfall. The reason is structural: the guides model the hot-spot rise
+as a single exponential with the oil time constant, while the two-exponential form adds an
+already-settled winding gradient to a partly-risen oil, which is what a transformer does.
+
+That test also identifies **k21** — the overshoot constant IEC says needs fibre-optic sensors,
+and which cancels exactly out of any steady-state record. Inverting the measured R₂₀ gives 2.29
+and 1.25 for the two windings against a tabulated 2.0. `crlb.overshoot_identifiability` reports
+whether a given record's transients can carry it at all, and
+`observability.detect_winding_handover` flags a gradient series whose hot spot has moved between
+windings — the contamination that made one earlier fit 8 K worse than doing nothing.
+
 ## Limitations
 
 **Read this section before quoting anything from this repository.**
