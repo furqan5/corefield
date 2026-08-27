@@ -132,3 +132,73 @@ def test_probe_positions_are_validated():
         internal_location_bound([0.5, 1.5])
     with pytest.raises(ValueError, match="non-empty"):
         internal_location_bound([])
+
+
+# --------------------------------------------------------------------------
+# Detecting a hot spot that has moved between windings
+#
+# On a published 400 MVA ONAF unit the governing hot spot moves from the 120 kV
+# winding to the 410 kV winding between 1.00 and 1.29 pu. Fitting a load
+# exponent through that handover fits a change of measurement location rather
+# than of physics, and on that unit it returned an answer 8 K worse than making
+# no correction at all -- confidently, with nothing in the fit complaining.
+# --------------------------------------------------------------------------
+
+
+def test_a_winding_handover_is_detected():
+    """The published case: local exponents 1.12, 0.68, 1.67 -- a dip in the middle."""
+    from corefield.observability import detect_winding_handover
+
+    load = np.array([0.65, 1.00, 1.29, 1.60])
+    # Gradient of the max-of-two-windings series, which crosses at ~1.14 pu.
+    gradient = np.array([13.1, 21.2, 25.2, 36.1])
+    result = detect_winding_handover(load, gradient)
+    assert result.detected
+    assert 1.0 < result.load_pu < 1.3
+    assert "not one physical location" in result.note
+
+
+def test_a_single_winding_tracked_throughout_is_not_flagged():
+    """The same unit, one winding end to end: exponents rise smoothly, no dip."""
+    from corefield.observability import detect_winding_handover
+
+    load = np.array([0.65, 1.00, 1.29, 1.60])
+    gradient = np.array([11.0, 18.1, 25.2, 36.1])
+    result = detect_winding_handover(load, gradient)
+    assert not result.detected
+    assert len(result.local_exponents) == 3
+
+
+def test_a_clean_power_law_is_never_flagged():
+    """A pure K**y series has a constant local exponent and must pass."""
+    from corefield.observability import detect_winding_handover
+
+    load = np.linspace(0.5, 1.6, 8)
+    result = detect_winding_handover(load, 20.0 * load**1.3)
+    assert not result.detected
+    assert all(abs(e - 1.3) < 1e-9 for e in result.local_exponents)
+
+
+def test_too_few_points_says_so_rather_than_guessing():
+    """Three points give one interior interval and no neighbours to compare."""
+    from corefield.observability import detect_winding_handover
+
+    result = detect_winding_handover(
+        np.array([0.6, 1.0, 1.4]), np.array([12.0, 20.0, 30.0]))
+    assert not result.detected
+    assert "not the same as not present" in result.note
+
+
+def test_unsorted_input_is_handled_and_bad_input_refused():
+    from corefield.observability import detect_winding_handover
+
+    load = np.array([1.60, 0.65, 1.29, 1.00])
+    gradient = np.array([36.1, 13.1, 25.2, 21.2])
+    assert detect_winding_handover(load, gradient).detected
+
+    with pytest.raises(ValueError, match="strictly positive"):
+        detect_winding_handover(np.array([0.0, 1.0, 1.2, 1.4]),
+                                np.array([1.0, 2.0, 3.0, 4.0]))
+    with pytest.raises(ValueError, match="duplicate values"):
+        detect_winding_handover(np.array([1.0, 1.0, 1.2, 1.4]),
+                                np.array([1.0, 2.0, 3.0, 4.0]))

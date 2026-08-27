@@ -87,6 +87,8 @@ __all__ = [
     "external_location_bound",
     "internal_location_bound",
     "probes_required_for",
+    "HandoverCheck",
+    "detect_winding_handover",
 ]
 
 
@@ -301,3 +303,122 @@ def probes_required_for(
         if internal_location_bound(positions, model, location).std_percent_of_height <= target_percent:
             return count
     return -1
+
+
+# --------------------------------------------------------------------------
+# Detecting that the hot spot has moved between windings
+#
+# A transformer with two instrumented main windings does not necessarily keep
+# its hottest point in the same one. On a published 400 MVA ONAF unit the hot
+# spot moves from the 120 kV winding to the 410 kV winding between 1.00 and
+# 1.29 pu, because the two are cooled differently and their gradients grow at
+# different rates.
+#
+# That matters because the governing hot spot -- the maximum over windings --
+# is then not a single physical location, and its apparent load exponent is a
+# blend of two. Fitting a power law through the handover fits a change of
+# MEASUREMENT LOCATION rather than of physics. On that unit, doing so returned
+# an answer 8 K worse than making no correction at all, and it did so
+# confidently: nothing in the fit complained.
+#
+# The signature is specific. Below the handover the series follows one
+# winding's exponent, above it the other's, and across the crossover the
+# maximum grows more slowly than either -- because the winding taking over
+# starts from below. So the local exponent DIPS in the crossing interval and
+# recovers after it. A single winding tracked throughout gives a local exponent
+# that varies smoothly and does not dip.
+# --------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class HandoverCheck:
+    """Whether a load-versus-gradient series crosses a winding handover.
+
+    Attributes
+    ----------
+    detected : whether a handover signature was found
+    load_pu : load at the centre of the suspect interval [pu], or None
+    local_exponents : the exponent implied by each consecutive pair [-]
+    note : what was found and what to do about it
+    """
+
+    detected: bool
+    load_pu: float | None
+    local_exponents: tuple[float, ...]
+    note: str
+
+
+def detect_winding_handover(
+    load_pu: NDArray[np.float64],
+    gradient_K: NDArray[np.float64],
+    *,
+    dip_fraction: float = 0.75,
+) -> HandoverCheck:
+    """Flag a hot-spot-to-top-oil gradient series that crosses windings.
+
+    Parameters
+    ----------
+    load_pu : load at each observation [pu], strictly positive
+    gradient_K : hot-spot rise above top oil at each load [K], strictly positive
+    dip_fraction : an interval is suspect when its local exponent falls below
+        this fraction of BOTH neighbours. **(c)** Judgement, not a measured
+        constant. 0.75 flags the published 400 MVA case, whose crossing
+        interval sits at 0.61 of its lower neighbour, while leaving a
+        single-winding series whose exponents rise monotonically untouched.
+
+    Returns
+    -------
+    HandoverCheck
+
+    Notes
+    -----
+    Needs at least four observations: three intervals, so that a middle one has
+    a neighbour on each side. With fewer, a handover cannot be distinguished
+    from an exponent that is simply changing, and the check says so rather than
+    guessing.
+
+    This detects a handover; it does not repair one. The repair is to track a
+    single winding throughout, which requires sensors in both.
+    """
+    K = np.asarray(load_pu, dtype=np.float64).ravel()
+    g = np.asarray(gradient_K, dtype=np.float64).ravel()
+    if K.shape != g.shape:
+        raise ValueError(f"load_pu shape {K.shape} != gradient_K shape {g.shape}")
+    if not (np.all(np.isfinite(K)) and np.all(np.isfinite(g))):
+        raise ValueError("load_pu and gradient_K must be finite")
+    if np.any(K <= 0.0) or np.any(g <= 0.0):
+        raise ValueError("load_pu and gradient_K must be strictly positive")
+
+    order = np.argsort(K)
+    K, g = K[order], g[order]
+    if np.any(np.diff(K) <= 0.0):
+        raise ValueError("load_pu contains duplicate values; cannot form intervals")
+
+    if K.size < 4:
+        return HandoverCheck(
+            False, None, (),
+            f"Only {K.size} observations. A handover needs at least four to be "
+            f"distinguished from an exponent that is simply changing with load. "
+            f"Not checked -- which is not the same as not present.",
+        )
+
+    exponents = np.log(g[1:] / g[:-1]) / np.log(K[1:] / K[:-1])
+    for i in range(1, exponents.size - 1):
+        left, mid, right = exponents[i - 1], exponents[i], exponents[i + 1]
+        if mid < dip_fraction * left and mid < dip_fraction * right:
+            centre = float(np.sqrt(K[i] * K[i + 1]))
+            return HandoverCheck(
+                True, centre, tuple(float(e) for e in exponents),
+                f"Handover signature near {centre:.2f} pu: the local exponent dips to "
+                f"{mid:.2f} between neighbours of {left:.2f} and {right:.2f}. The "
+                f"governing hot spot is most likely moving between windings here, so "
+                f"this series is not one physical location. Fitting a load exponent "
+                f"through it fits a change of measurement location, not of physics. "
+                f"Track a single winding across the whole range instead.",
+            )
+
+    return HandoverCheck(
+        False, None, tuple(float(e) for e in exponents),
+        f"No handover signature. Local exponents {np.round(exponents, 2).tolist()} "
+        f"vary without a dip, consistent with one physical location throughout.",
+    )

@@ -402,3 +402,70 @@ def test_malformed_input_is_refused(bad, match):
 
     with pytest.raises(ValueError, match=match):
         load_slope_identifiability(bad["load_pu"], _slope_params(), bad["sigma_K"])
+
+
+# --------------------------------------------------------------------------
+# Identifiability of the overshoot constant k21
+#
+# At steady state the two gradient branches settle to k21*g and (k21-1)*g,
+# whose difference is g regardless of k21 -- the constant cancels exactly. So
+# no steady-state record informs it at any load or length, and the information
+# lives near the overshoot peak after a step.
+# --------------------------------------------------------------------------
+
+
+def _overshoot_record(kind):
+    from corefield.iec60076_7 import ThermalParams
+
+    params = ThermalParams(delta_theta_or_K=45.0, tau_o_min=150.0,
+                           delta_theta_hr_K=20.0, tau_w_min=7.0)
+    dt = 30.0
+    t = np.arange(0.0, 12 * 3600.0 + dt, dt)
+    ambient = np.full(t.size, 25.0)
+    if kind == "flat":
+        load = np.full(t.size, 0.85)
+        idx = np.arange(0, t.size, 20)
+    else:
+        load = np.where(t < 3 * 3600.0, 0.6, 1.1)
+        window = (t > 3 * 3600.0) & (t < 5 * 3600.0) if kind == "through" else (t > 9 * 3600.0)
+        idx = np.flatnonzero(window)[::20]
+    return t, load, ambient, params, idx
+
+
+def test_k21_is_identifiable_from_a_step_sampled_through_the_overshoot():
+    from corefield.crlb import overshoot_identifiability
+
+    t, load, ambient, params, idx = _overshoot_record("through")
+    result = overshoot_identifiability(t, load, ambient, params, idx, 0.5)
+    assert result.supported
+    assert result.relative < 0.1
+
+
+def test_k21_is_not_identifiable_from_the_same_step_sampled_late():
+    """Same transient, observed only after it has settled. The step is not enough."""
+    from corefield.crlb import overshoot_identifiability
+
+    t, load, ambient, params, idx = _overshoot_record("late")
+    result = overshoot_identifiability(t, load, ambient, params, idx, 0.5)
+    assert not result.supported
+    assert "overshoot peak" in result.note
+
+
+def test_constant_load_carries_no_information_about_k21_at_all():
+    from corefield.crlb import overshoot_identifiability
+
+    t, load, ambient, params, idx = _overshoot_record("flat")
+    result = overshoot_identifiability(t, load, ambient, params, idx, 0.5)
+    assert not result.supported
+    assert not np.isfinite(result.std_k21)
+
+
+def test_without_hotspot_observations_k21_is_invisible():
+    """It cancels out of the steady-state gradient, so top-oil says nothing."""
+    from corefield.crlb import overshoot_identifiability
+
+    t, load, ambient, params, _ = _overshoot_record("through")
+    result = overshoot_identifiability(
+        t, load, ambient, params, np.array([], dtype=np.intp), 0.5)
+    assert not result.supported
+    assert "invisible in top-oil" in result.note

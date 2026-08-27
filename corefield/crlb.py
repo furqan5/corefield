@@ -70,6 +70,7 @@ from .iec60076_7 import (
     CoolingConstants,
     ThermalParams,
     _integrate,
+    simulate,
 )
 
 __all__ = [
@@ -81,6 +82,8 @@ __all__ = [
     "efficiency_ratio",
     "LoadSlopeIdentifiability",
     "load_slope_identifiability",
+    "OvershootIdentifiability",
+    "overshoot_identifiability",
 ]
 
 #: Parameter order everywhere in this package.
@@ -475,3 +478,128 @@ def load_slope_identifiability(
             f"computed from a fixed exponent should be treated as biased LOW."
         )
     return LoadSlopeIdentifiability(std_x1, rho, hull, supported, note)
+
+
+# --------------------------------------------------------------------------
+# Identifiability of the overshoot constant k21
+#
+# k21 sets the amplitude of the fast gradient branch, and with it the overshoot
+# that is the entire reason the two-exponential form exists. IEC 60076-7 states
+# it "can be defined only if the transformer is equipped with fibre optic
+# sensors", and the package holds it at the tabulated value everywhere.
+#
+# The reason no steady-state record can inform it is structural rather than
+# statistical: at steady state the two branches settle to k21*g and (k21-1)*g,
+# whose DIFFERENCE is g regardless of k21. The constant cancels exactly. So the
+# information about k21 lives entirely in the transient, and specifically near
+# the overshoot peak -- roughly k22*tau_w * ln(k21*k22*tau_o / ((k21-1)*tau_o))
+# after a step, which for the ONAF column is around 40 min.
+#
+# A record that never steps, or that is sampled only long after each step, has
+# no information about k21 at any length.
+# --------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class OvershootIdentifiability:
+    """Whether a record's transient content can inform the overshoot constant.
+
+    Attributes
+    ----------
+    std_k21 : Cramer-Rao standard deviation on k21 [-]
+    relative : std_k21 as a fraction of the tabulated k21 [-]
+    supported : whether the record supports identifying k21
+    note : plain statement of what the numbers mean
+    """
+
+    std_k21: float
+    relative: float
+    supported: bool
+    note: str
+
+
+def overshoot_identifiability(
+    time_s: NDArray[np.float64],
+    load_pu: NDArray[np.float64],
+    ambient_C: NDArray[np.float64] | float,
+    params: ThermalParams,
+    hotspot_index: NDArray[np.intp],
+    sigma_K: float,
+    constants: CoolingConstants = ONAF_MEDIUM_LARGE_POWER,
+    *,
+    tolerance: float = 0.25,
+    step: float = 1e-3,
+) -> OvershootIdentifiability:
+    """Can this record's hot-spot observations identify k21?
+
+    Parameters
+    ----------
+    time_s, load_pu, ambient_C : the record, as for `fisher_information`
+    params : thermal parameters to evaluate the sensitivity at
+    hotspot_index : indices of the hot-spot observations. k21 is invisible in
+        top-oil, so only these carry information about it
+    sigma_K : hot-spot measurement noise [K]
+    constants : cooling-class constants, evaluated at their tabulated k21
+    tolerance : the largest std_k21 / k21 still called supported
+    step : relative finite-difference step on k21
+
+    Returns
+    -------
+    OvershootIdentifiability
+
+    Notes
+    -----
+    Uses a one-parameter bound: it asks whether the record could pin k21 with
+    everything else known, which is the most generous case. A record failing
+    this bound cannot identify k21 under any joint fit either.
+    """
+    idx = np.asarray(hotspot_index, dtype=np.intp)
+    if idx.size == 0:
+        return OvershootIdentifiability(
+            float("inf"), float("inf"), False,
+            "No hot-spot observations. k21 is invisible in top-oil, because at "
+            "steady state the two branches differ by g regardless of it, so a "
+            "record without hot-spot reads carries no information about it at all.",
+        )
+    if not np.isfinite(sigma_K) or sigma_K <= 0.0:
+        raise ValueError(f"sigma_K must be finite and > 0, got {sigma_K!r}")
+
+    def hotspot_at(k21: float) -> NDArray[np.float64]:
+        c = CoolingConstants(x=constants.x, y=constants.y, k11=constants.k11,
+                             k21=k21, k22=constants.k22, name="perturbed",
+                             x1=constants.x1, y1=constants.y1)
+        return simulate(time_s, load_pu, ambient_C, params, constants=c).hotspot_C[idx]
+
+    k0 = constants.k21
+    h = max(step * k0, 1e-4)
+    # k21 >= 1 is enforced by CoolingConstants, so step upward from the bound.
+    lo = max(k0 - h, 1.0 + 1e-9)
+    derivative = (hotspot_at(k0 + h) - hotspot_at(lo)) / (k0 + h - lo)
+
+    information = float(derivative @ derivative) / sigma_K**2
+    if information <= 0.0 or not np.isfinite(information):
+        return OvershootIdentifiability(
+            float("inf"), float("inf"), False,
+            "The hot-spot observations are completely insensitive to k21. The "
+            "record contains no step this package can see, or every observation "
+            "falls long after the transients have settled.",
+        )
+
+    std = float(np.sqrt(1.0 / information))
+    relative = std / k0
+    supported = relative <= tolerance
+    if supported:
+        note = (
+            f"Supported: k21 bounded to {100 * relative:.0f} % of its tabulated "
+            f"{k0:g}. The record contains transients sampled while the overshoot "
+            f"is developing."
+        )
+    else:
+        note = (
+            f"NOT supported: the bound on k21 is {100 * relative:.0f} % of its "
+            f"tabulated {k0:g}. Information about k21 lives near the overshoot "
+            f"peak, roughly 40 min after a step for this cooling class. Sampling "
+            f"only settled operation, or only long after each step, leaves it "
+            f"unidentifiable however long the record runs."
+        )
+    return OvershootIdentifiability(std, relative, supported, note)
