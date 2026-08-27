@@ -160,3 +160,13 @@ result it mis-called.
 
 **F2 is not yet scorable.** No nameplate or heat-run τ_o was supplied with the data, so there is
 nothing to difference against. Requested; unanswered.
+
+### Interpretation correction, 28 Aug 2026
+
+The historical predictions and scores above are preserved, not retroactively rescored.
+The later claim that the 7.91 K and 1.54 K rows differ only by a confirmed data fault is
+withdrawn: they also use different fitting assumptions, including the winding time constant.
+The constant-load period remains a suspected data-quality issue pending the supplier's check.
+Model selection and exclusions made while investigating these records require a new,
+pre-specified evaluation before claiming independent prospective validation.
+See [validation scope](docs/validation_scope.md) and the corrected README.

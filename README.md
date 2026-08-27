@@ -1,45 +1,44 @@
 # CoreField
 
-**Transformer winding hot-spot estimation and dynamic loading envelopes, from three signals
-a utility already logs.**
+**Research software for transformer thermal-parameter identification and candidate loading
+envelopes. Not an operational loading authority.**
 
 Load current, ambient temperature, top-oil temperature. From those plus a handful of hot-spot
 calibration reads, CoreField identifies the four IEC 60076-7 thermal parameters
 (Δθ_or, τ_o, Δθ_hr, τ_w) for a specific unit, then runs the identified model in service to
-answer the question that carries commercial value: **how much extra load can this transformer
-carry, and for how long?**
+explore a future product question: **how much load could a validated model support, and for
+how long?** Three external signals alone do not identify the winding parameters. Existing
+hot-spot references or an independently justified calibration are needed; a new external
+logger does not supply internal winding measurements.
 
-Those four parameters are the ones the standard says can otherwise only be obtained from a
-prolonged heat-run test on a transformer fitted with fibre-optic sensors.
-
-**This is a complement to that test, not a replacement for it.** For a new transformer the
-heat-run is part of procurement verification and characterises the unit as built. What it cannot
-do is follow what the unit has *become* after twenty years of service, and it was never performed
-at all on most of the installed fleet. Those two cases — the aged unit and the undocumented one —
-are what this addresses. The framing was corrected on the advice of a reviewer who builds thermal
-models for a transmission operator; the earlier "replaces the heat-run test" was overreach.
+**(c) Intended role: complement instrumented testing, not replace it.** A unit-specific
+assessment might help where existing characterization is incomplete or operating conditions
+have changed. This repository does not establish how many installed units lack characterization,
+and an external logger cannot replace the winding references needed for identification.
 
 ---
 
 > ## ⚠ TWO THINGS TO READ BEFORE ANYTHING ELSE
 >
-> **1. IEC 60076-7 provenance.** The two-exponential structure and the ONAF constants were
-> checked against the published text of IEC 60076-7:2018 Edition 2.0 on 25 Aug 2026 and **match
-> it** — all five cooling-class constants, both tabulated time constants, and the assignment of
-> each time constant to its branch. Three numerical checks in `corefield.verification` confirm
-> that assignment independently of any document.
+> **1. IEC 60076-7 provenance: MIRROR-SOURCED, UNVERIFIED against a licensed copy.**
+> The 25 Aug 2026 mirror check did not close the licensed-source verification gate.
+> Numerical self-consistency checks do not establish standards compliance or physical validity.
+> The settled ONAF constants remain unchanged.
 >
 > **This repository reproduces no text, table or figure from the standard.** IEC standards are
 > copyrighted and sold. If you claim standards compliance, hold your own copy from an authorised
 > distributor — the constants here are used as engineering facts, not as a substitute for it.
 >
-> **2. Field validation: none.** Every number in this repository was produced from synthetic
-> data. No measurement from a real transformer has ever entered it. See
-> [Limitations](#limitations) — that section is not softened, and should not be.
+> **2. Evidence is limited.** Synthetic tests, a qualified archived ODAF-data evaluation, and an
+> exploratory reanalysis of a published ONAF experiment are different evidence types. None
+> establishes a deployable overload rating. See [Limitations](#limitations).
 
 ---
 
 ## The result that chose the production engine
+
+**(a, synthetic implementation test only).** Model C matches the structure of the synthetic
+truth. The following table does not establish superiority on physical transformers.
 
 Three model structures were fitted on the same ordinary day (0.6–1.2 pu), then asked about a
 2-hour emergency overload at **1.30 pu** — outside the load range they were fitted over.
@@ -50,10 +49,9 @@ Three model structures were fitted on the same ordinary day (0.6–1.2 pu), then
 | B | single-exponential, free exponent | 1.77 K | **+3.17 K** | FAIL |
 | **C** | **IEC two-exponential** | **0.11 K** | **+0.32 K** | **PASS** |
 
-This separation belongs to **ON.. cooling classes**, where `k21 = 2.0` gives the winding a
-transient overshoot that only a two-exponential model can follow. For **directed-flow (OD/ODAF)**
-units the standard sets `k21 = 1.0`: the slow branch vanishes, the overshoot with it, and the
-three models converge. Do not quote this table for a directed-flow transformer.
+This is one **ONAF-configured synthetic case**, with `k21 = 2.0`. In the package's OD/ODAF
+configuration, `k21 = 1.0` removes the slow gradient branch algebraically. That does not make
+this table transferable to ODAF or prove that all model structures perform alike there.
 
 ![Three models fitted on an ordinary day, then asked about a 1.30 pu emergency overload](docs/day_c_extrapolation.png)
 
@@ -139,18 +137,16 @@ print(envelope.summary())
 
 These are design decisions, not gaps.
 
-**It will not fit without ambient.** Ignoring a varying ambient under-predicts the hot-spot peak
-by **3.09 K** — in the dangerous direction, because the ambient maximum coincides with the
-afternoon load peak. `load_telemetry` raises `AmbientMissingError` rather than warning. The fix
-is cheap: ambient reaches the winding through a ~75-minute oil low-pass, so an hourly public
-weather feed is sufficient.
+**It will not fit without ambient.** In the synthetic campaign, ignoring varying ambient
+under-predicts the hot-spot peak by **3.09 K**. `load_telemetry` raises
+`AmbientMissingError` rather than warning. Ambient measurement quality and sampling must
+be justified for the actual site; the example's ~75-minute oil response does not prove an
+hourly remote weather feed is sufficient everywhere.
 
 **It will not supply loading limits.** `LoadingLimits` has no defaults and
 `iec_loading_limits()` exists only to raise `NotImplementedError` explaining why. This is
-unchanged by the constants having been checked: verifying Table 4's *thermal characteristics*
-says nothing about the *permissible temperature limits*, which are a different table and were
-deliberately not read. More importantly, the limits decide the temperature at which this
-software tells an operator it is safe to overload a transformer, and they vary with loading type,
+independent of the still-unverified constants: thermal characteristics do not supply permissible
+temperature limits. The limits affect candidate loading calculations and vary with loading type,
 transformer category and each utility's own policy. That number must be owned by the person
 relying on it. You supply the limits and a provenance string, and that string travels into every
 result.
@@ -171,13 +167,15 @@ boundary as well as the box bounds, names the stage, and refuses.
 **It will not chase a parameter the data cannot inform.** `identify_staged(..., fixed={...})`
 holds a parameter at a supplied value, removes it from the optimiser, and reports it as
 `HELD, NOT IDENTIFIED` rather than as a measurement. This is the intended response to the case
-above: a 10-minute log samples a 7-minute winding transient less than once per time constant, so
-τ_w is not estimable from it and the honest move is the tabulated value, declared as tabulated.
+above: the archived-data fit did not support a reliable free τ_w estimate. Holding it at a
+declared assumption is different from identifying it; sampling interval alone is not a proof
+that no estimator could recover it.
 
-**It will not accept a channel that has stopped moving.** A load or ambient channel pinned on one
+**It warns about long constant channels.** A load or ambient channel pinned on one
 exact value for `STUCK_CHANNEL_HOURS` (48 h) raises a warning from `load_telemetry`. Such a
 channel is invisible to every other check — the row count is right, the timestamps are regular,
-the value is in range — and one cost this project its headline field result for a day.
+the value is in range. This is a screening heuristic, not proof of a failed sensor; it must not
+automatically justify excluding an inconvenient validation period.
 
 **It will not interpolate observations.** Load and ambient are model *inputs* and are
 interpolated onto the integration grid. Top-oil is an *observation* and is not — interpolating it
@@ -190,9 +188,9 @@ data earns.
 ## What the analysis established
 
 **Efficiency.** On the IEC two-exponential structure, the four-parameter estimator is unbiased to
-better than 0.12 % and **sits on the Cramér–Rao bound** — 0.97 / 1.01 / 0.95 / 0.97× the
-folded-Gaussian expectation at 400 seeds. No estimator, classical or learned, can do materially
-better on this data.
+better than 0.12 % and **is consistent with the Cramér–Rao bound** — 0.97 / 1.01 / 0.95 / 0.97×
+the folded-Gaussian expectation at 400 seeds. This statement is conditional on the synthetic
+model, Gaussian noise and the unbiased-estimator assumptions; it is not a field-accuracy limit.
 
 **Commissioning.** The bound is a property of the *record*, not the method, so it yields an
 actionable spec. One load event leaves a ~12 % floor under τ_w that nothing can beat; two events
@@ -214,126 +212,98 @@ at the true peak — and it distorts the *dynamics*, not just the level, so a "r
 only" positioning does not escape it. **Commissioning requires at least one bias-audited hot-spot
 reference per unit.**
 
-**Hot-spot *location* is not observable from outside.** Top-oil is exactly invariant to where in
-the winding the hot spot sits — moving it from 10 % to 90 % of winding height changes the reading
-by 0.0000000 K, because every external measurement is a function of *total* winding loss and
-location changes only its distribution. The Cramér–Rao bound on location from every external
-channel combined is ±40 % of winding height; two probes inside the winding give ±0.33 %. See
-[ASSESSMENT.md](ASSESSMENT.md); this is why the package has no field-reconstruction module.
+**Hot-spot location is not identifiable from top-oil in the implemented simplified model.**
+Relocating its prescribed internal loss distribution leaves modeled top-oil unchanged.
+Other reported location bounds also depend on that simplified sensing model. They do not prove
+a universal impossibility for every external measurement arrangement. No spatial reconstruction
+capability is validated here; see [ASSESSMENT.md](ASSESSMENT.md).
 
 ![Hot-spot location is invariant to every external measurement](docs/hotspot_location_invariance.png)
 
-## First field validation
+## Archived operating-data evaluation
 
-**26 Aug 2026.** Three ODAF transformer records were supplied privately by their owner. The data
-is not ours to publish and is not in this repository; the results are reportable and are below.
+**(b, previous internal run; not independently reproduced here).** One 360 MVA ODAF record
+was used for fitting and later-period evaluation. The reported conditional result was
+**1.54 K hot-spot RMSE and 1.31 K top-oil RMSE over 5,029 samples**, after excluding a
+7.07-day constant-load window and holding the winding time constant fixed.
 
-One unit carried enough thermal excitation to identify. Fit on 74 days, validated on 42 days the
-fit never saw:
+Those qualifications are part of the result:
 
-| | out-of-sample hot-spot RMSE |
-|---|---|
-| every sample scored | 7.91 K |
-| **stuck-channel window rejected, τ_w held at IEC Table 4** | **1.54 K** |
+- The excluded window is a **suspected data-quality issue, not a confirmed sensor failure**.
+  The data supplier is checking it. Constant recorded load alone does not prove a failed channel.
+- The previously quoted **7.91 K** came from a different fitting configuration. It is not the
+  same fit scored with and without the exclusion, so it must not be presented as a clean
+  before/after improvement caused solely by a fault detector.
+- The record is below nameplate. A low average RMSE is not a worst-case error bound, an
+  overload validation, or a guarantee across cooling stages.
+- The winding time constant was **held, not identified**. Coarse sampling and poor excitation
+  make estimation difficult; sampling interval alone is not a proof of non-identifiability.
+- Private records remain excluded from the repository. Permission to share data, report results,
+  acknowledge a contributor, and claim endorsement are separate matters.
 
-Top-oil out-of-sample 1.31 K, over 5 029 observations on 35 unseen days. The operational criterion
-put to this project by an engineer at the supplying utility is RMSE ≤ 2 °C out-of-sample.
+## Published ONAF overload case: exploratory, not a validated capacity product
 
-**The gap between those two rows is the whole result, and it is a data finding, not a tuning
-pass.** The final 7.07 days of the validation segment carry a load channel holding exactly one
-value, 0.01 pu — `np.unique` returns a single element — while ambient still swings 12 K, top-oil
-still swings 11 K, and the cooling control keeps switching fan stages. At a genuine 0.01 pu the
-steady oil rise would be Δθ_or/(1+R) ≈ 6 K; it sits at 22 K for a week. The thermal channels are
-alive and the load channel is stuck at a floor value. The fitting segment contains **zero** samples
-below 0.02 pu, which is why the fit never saw it and the score absorbed all of it.
+**(a, source)** Nordman and Lahtinen studied a purpose-designed 400/400/125 MVA **ONAF**
+transformer. Their paper contains measured load-test points up to **1.60 pu** and measured
+varying-load curves. It is not an ODAF fleet study.
+[Original paper, DOI 10.1109/TPWRD.2002.807747](https://doi.org/10.1109/TPWRD.2002.807747).
 
-Three things this does **not** establish, all of which matter more than the number:
+**(b, exploratory reanalysis)** A fixed-exponent fit based on lower-load points read the
+published hot spot **6.35 K low at 1.60 pu**. A later, differently specified single-winding
+fit using data through 1.29 pu gave **−2.63 K** at 1.60 pu. These are case-study calculations,
+not a matched demonstration of a general repair. The later model choices followed inspection
+of the same small dataset; 1.60 pu is not an untouched prospective test of the final method.
+Neither error is a transferable safety margin.
 
-- **Nothing above 0.90 pu.** The whole three-unit corpus tops out at 0.93 pu. The product is a
-  loading envelope *above* nameplate; this validates interpolation, not that. **That gap has
-  since been tested against published overload data — see the next section, and the result is
-  not good.**
-- **Three of four parameters.** τ_w is held at the tabulated value, not measured — at 10-minute
-  logging it is not estimable, and the package now says so rather than reporting a bound as a
-  measurement.
-- **One unit.** A second refused identification outright — 0.10 pu of load variation across
-  17 days is not enough excitation — and a third is 96 % missing hot-spot. The refusals are the
-  designed behaviour, and they are also the reason there is no independent replication here.
+The interval oil power-law exponents calculated from those points vary. That motivates an
+experimental load-dependent exponent, but does not establish its physical cause, prove that
+this parameterization is correct, or determine the slope on any other ONAF, ONAN or ODAF unit.
+Anchoring amplitudes to a nameplate observation does not make them noise-free.
 
-## Above nameplate — the method fails, and the fix needs data you do not have
+**(a, implementation)** `CoolingConstants` accepts caller-supplied `x1` and `y1`, defaulting
+to zero. The production four-parameter estimator does **not** automatically identify them.
+`crlb.load_slope_identifiability` is a conditional steady-state precision diagnostic. Its
+illustrative reference is available by default only for the unchanged ONAF example; other
+constants require an explicit reference magnitude. Rank, load distribution, independent
+sample count and noise all matter. No mathematical rule requires deliberately overloading a
+transformer to estimate a slope.
 
-**27 Aug 2026.** Nordman and Lahtinen (*IEEE Trans. Power Del.* 18(1), 2003) publish fibre-optic
-measurements on a 400 MVA ONAF unit at 0.65, 1.00, 1.29 and 1.60 pu. Identifying below nameplate
-and predicting the overload points is the test this project had never been able to run.
+### Corrected transient provenance
 
-| | hot-spot error at 1.60 pu |
-|---|---|
-| per-unit identification, fixed exponent | **−6.35 K — reads LOW** |
-| the generic tabulated exponents | +5.28 K — reads high |
+**(a, source)** The paper's **2.5-pu, 20-minute temperatures are calculated projections**.
+Section V transfers response ratios derived graphically from the measured **1.6-pu**
+curves to that scenario. In particular, **156 °C is not a measured 2.5-pu hot spot**.
+The guides compared there are the editions cited in the 2003 paper, not a test of every
+current IEC/IEEE implementation.
 
-**It does not beat the table, and it errs in the unsafe direction.** A model that under-predicts
-during an overload withholds the warning it exists to give.
+**(b, model comparison)** The private script's approximately 160 °C result is a comparison
+with that projection under assumed parameters. The former headline that CoreField was
+validated to within 4 K in a physical 2.5-pu test is **withdrawn**. One normalized response
+ratio also depends on relative oil/winding contributions and other time constants; matching
+it does not isolate a unique physical model.
 
-**Why:** the oil exponent is not constant. Measured over successive load intervals it is 0.717,
-0.766, 0.846 — climbing with load, while the model holds one value. The tabulated 0.8 sits
-mid-range, which is why a crude average wins. Identifying the wrong-end value *more accurately*
-makes the extrapolation *worse*.
+**(a, implementation; c, interpretation limits)** The one-parameter `k21` information
+diagnostic holds other parameters known. Passing it is not joint identification of
+`k21`, `k22` and the winding time constant. Likewise,
+`observability.detect_winding_handover` flags a local-exponent pattern; it is not a
+validated detector of physical hot-spot migration. These diagnostics are not automatically
+enforced by the estimator.
 
-**The fix, and its price.** `CoolingConstants` now carries `x1` and `y1`, the load-slopes of the
-two exponents, defaulting to zero so nothing else changes. Exploiting f(1)=1 — true for any
-exponent — makes the two amplitudes measurements at nameplate rather than estimates, and with
-both slopes free the held-out 1.60 pu error falls to **−2.63 K hot spot, −0.97 K top oil**.
-59 % of the unsafe bias removed, with the fitted exponents converging on the tabulated values at
-high load.
+**Next evidence gate (c):** compare the actual measured transient against pre-specified
+models, with cooling class, winding identity, initial state and digitisation uncertainty
+recorded. A future field pilot stays read-only. No deliberate overload, automatic control,
+or capacity promise follows from the results above.
 
-But that fit uses a 1.29 pu observation. **The slopes are not identifiable from service data**:
-their two sensitivities differ only by the factor (K−1), so over the narrow band a working
-transformer occupies, ρ(x₀,x₁) = 0.995 and the estimator refuses — correctly. Run
-`private/exponent_identifiability.py` (no private data) to see the bound.
-
-**So the honest claim is narrower than the one this project started with:** accurate at and below
-nameplate from data a utility already has; accurate above it only with a designed load excursion.
-The specification for that excursion — range, number of levels, dwell, instrumentation — is
-derived from these results and is the practical output of the failure.
-
-### The transient half, where the structure wins decisively
-
-The same source makes a sharper claim about *dynamics*: hot spots rise faster in the first hour
-of overload than the guides predict, so the guides are "not applicable for short time emergency
-loading". That is the regime a dynamic loading envelope is sold into, and it is testable from the
-paper's tabulated R₂₀ values without touching a figure.
-
-For a 0.3 → 2.5 pu step held 20 minutes, scored on the ratio of the 20-minute rise to the settled
-rise:
-
-| | R₂₀ | hot spot at 20 min |
-|---|---|---|
-| IEC principles | 0.18 | 79 °C |
-| IEEE principles | 0.23 | 89 °C |
-| **this package** | **0.52** | **160 °C** |
-| **measured** | **0.56** | **156 °C** |
-
-**The guides under-predict by 67–77 K. This package is 4 K high — the conservative direction**,
-recovering 89 % of their shortfall. The reason is structural: the guides model the hot-spot rise
-as a single exponential with the oil time constant, while the two-exponential form adds an
-already-settled winding gradient to a partly-risen oil, which is what a transformer does.
-
-That test also identifies **k21** — the overshoot constant IEC says needs fibre-optic sensors,
-and which cancels exactly out of any steady-state record. Inverting the measured R₂₀ gives 2.29
-and 1.25 for the two windings against a tabulated 2.0. `crlb.overshoot_identifiability` reports
-whether a given record's transients can carry it at all, and
-`observability.detect_winding_handover` flags a gradient series whose hot spot has moved between
-windings — the contamination that made one earlier fit 8 K worse than doing nothing.
+See [validation scope and claim corrections](docs/validation_scope.md) before reusing results.
 
 ## Limitations
 
 **Read this section before quoting anything from this repository.**
 
-1. **One field validation, on one unit, below nameplate.** See the section above. Everything
-   else here is synthetic: every parameter recovery, every gate verdict was computed against a
-   truth model this package also generated. The field result covers a single 360 MVA ODAF unit
-   over 0.04–0.90 pu, so it validates interpolation and says nothing about the overload
-   extrapolation the loading envelope performs.
+1. **One qualified archived operating-data result, below nameplate.** Its exclusion rule and
+   fitting assumptions need independent review. Published ONAF data provide a separate
+   exploratory case study, not replication on another operating ODAF unit. No prospective
+   operational overload validation has been completed.
 2. **Model C is structure-matched to the synthetic truth.** The mismatch test killed models A and
    B; it did not test C. The day-C result certifies parameter-error propagation under
    extrapolation — it does not certify structural risk on a real unit whose physics may differ
@@ -349,8 +319,9 @@ windings — the contamination that made one earlier fit 8 K worse than doing no
 7. **WTI bias was tested as a constant offset.** Gain-type or load-dependent replica error is
    untested.
 8. **The observability analysis in `corefield.observability` uses a simplified 1-D axial model**
-   with a prescribed oil-rise profile, not CFD. Its leading-order conclusion follows from energy
-   conservation and is robust to that simplicity; its second-order magnitudes are not.
+   with a prescribed oil-rise profile, not CFD. Its conclusions depend on the implemented
+   assumptions; it is not a universal impossibility proof for all external sensing arrangements.
+   No spatial winding-hot-spot product is validated here.
 
 ## Documentation
 
@@ -365,8 +336,10 @@ windings — the contamination that made one earlier fit 8 K worse than doing no
 
 ## Requirements
 
-Python 3.11+, NumPy, SciPy, pandas. CPU-only — measured at 137 MiB peak resident memory for the full campaign, against a 2 GB budget. No GPU, no
-network, no paid services. The demo adds Streamlit and Matplotlib.
+Python 3.11+, NumPy, SciPy, pandas. CPU-only. A 24 Aug 2026 measurement recorded about 137 MiB
+resident memory for the day-C comparison plus three corruption scenarios, not every possible
+workload. The project budget is 2 GB. No GPU or paid runtime service is required.
+The demo adds Streamlit and Matplotlib; dependency installation requires network access.
 
 ## Licence
 
@@ -379,7 +352,7 @@ engineering software that may end up in a regulated decision path.
 lets them be quoted and built on with attribution intact.
 
 See [NOTICE](NOTICE) for the attribution notice, the split between the two licences, and two
-things the licences do not cover: **no IEC standard text is redistributed here**, and **nothing
-in this repository has been validated against a real transformer**. Loading decisions on
+things the licences do not cover: **no IEC standard text is redistributed here**, and
+**no operational overload capability has been validated**. Loading decisions on
 electrical plant carry safety and asset consequences; this software must not be the sole basis
 for one.

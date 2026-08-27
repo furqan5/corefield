@@ -358,19 +358,16 @@ def efficiency_ratio(
 #     d/dx1 = dtheta_or * g^x * ln g * (K - 1)
 #
 # They differ ONLY by the factor (K-1). The two Jacobian columns are therefore
-# exactly collinear at a single load and separate only in proportion to how much
-# (K-1) varies across the record. For this parameter the load hull is not one
-# influence on identifiability among several -- it is the whole of it.
-#
-# This matters because x1 is the parameter that governs above-nameplate
-# behaviour, and a record confined to the narrow band an in-service transformer
-# occupies cannot inform it at any record length or sampling rate.
+# exactly collinear at a single load. Load diversity affects rank and
+# conditioning, but independent sample count and measurement noise also affect
+# precision. Repeating a full-rank design improves the ideal IID bound; it does
+# not establish the validity of extrapolation to unobserved loads. (a, algebra)
 # --------------------------------------------------------------------------
 
 
 @dataclass(frozen=True)
 class LoadSlopeIdentifiability:
-    """Whether a record's load hull can support a load-dependent oil exponent.
+    """Conditional precision of a load-dependent oil exponent for a record.
 
     Attributes
     ----------
@@ -378,7 +375,8 @@ class LoadSlopeIdentifiability:
     correlation_x0_x1 : correlation between the two exponent terms [-]. As this
         approaches 1 the pair becomes indistinguishable.
     load_hull : (min, max) of the load actually present [pu]
-    supported : whether the record supports identifying x1 at all
+    supported : whether the assumed design meets the chosen precision threshold;
+        not a validation of model structure or of a loading envelope
     note : plain statement of what the numbers mean
     """
 
@@ -395,10 +393,10 @@ def load_slope_identifiability(
     sigma_K: float,
     constants: CoolingConstants = ONAF_MEDIUM_LARGE_POWER,
     *,
-    reference_x1: float = 0.21,
+    reference_x1: float | None = None,
     tolerance: float = 0.25,
 ) -> LoadSlopeIdentifiability:
-    """Can this record's load hull identify the oil exponent's load-slope?
+    """Evaluate a conditional steady-state oil-slope precision bound.
 
     Parameters
     ----------
@@ -406,14 +404,17 @@ def load_slope_identifiability(
         observations are assumed; this bounds the amplitude information, which
         is where the exponent lives.
     params : thermal parameters, for dtheta_or and the loss ratio
-    sigma_K : top-oil measurement noise [K]
+    sigma_K : independent, identically distributed top-oil noise std [K]
     constants : cooling-class constants
     reference_x1 : the slope magnitude to judge the bound against [per pu].
-        Default 0.21 is an ENGINEERING ESTIMATE from published fibre-optic
-        measurements on a 400 MVA ONAF unit, whose oil exponent moved 0.717 ->
-        0.846 across 0.65-1.60 pu. It is not a universal constant and a unit
-        with a flatter cooling characteristic would need a wider hull.
-    tolerance : the largest std_x1 / reference_x1 still called supported
+        Positive magnitude, not an estimated slope. If omitted, 0.21 is used
+        only with the unchanged ONAF example constants. It is an illustrative
+        engineering estimate (b), motivated by an exploratory analysis of
+        Nordman and Lahtinen's 2003 ONAF test, DOI 10.1109/TPWRD.2002.807747.
+        Interval power-law exponents are not direct measurements of x1 in
+        this model. Other constants require an explicit reference; no slope
+        magnitude or direction is established for ODAF or ONAN by that test.
+    tolerance : positive maximum std_x1 / reference_x1 called supported [-]
 
     Returns
     -------
@@ -421,11 +422,19 @@ def load_slope_identifiability(
 
     Notes
     -----
-    Returns `supported=False` rather than raising, because the caller may
-    legitimately want the number in order to design a commissioning excursion
-    that WOULD support it.
+    Fits the information for three parameters: oil-rise amplitude, x0, x1.
+    The loss ratio and all other model assumptions are treated as known.
+    Correlated observations, sensor bias and structural mismatch are excluded.
+    A full-rank record can become more precise with more independent samples;
+    repeating a rank-deficient design cannot add missing parameter directions.
+    Neither result demonstrates safe operation outside the validated domain.
+
+    Returns `supported=False` for inadequate information rather than raising.
+    This is a diagnostic; it does not fit x1 or automatically gate the estimator.
     """
-    K = np.asarray(load_pu, dtype=np.float64).ravel()
+    K = np.asarray(load_pu, dtype=np.float64)
+    if K.ndim != 1:
+        raise ValueError("load_pu must be a one-dimensional array")
     if K.size < 2:
         raise ValueError("load_pu must contain at least two samples")
     if not np.all(np.isfinite(K)):
@@ -434,48 +443,74 @@ def load_slope_identifiability(
         raise ValueError("load_pu contains negative load")
     if not np.isfinite(sigma_K) or sigma_K <= 0.0:
         raise ValueError(f"sigma_K must be finite and > 0, got {sigma_K!r}")
+    if reference_x1 is None:
+        if constants != ONAF_MEDIUM_LARGE_POWER:
+            raise ValueError(
+                "reference_x1 must be supplied for constants other than the default "
+                "ONAF example; its illustrative slope must not transfer to another "
+                "cooling class or calibration."
+            )
+        reference_x1 = 0.21  # (b) Historical ONAF sensitivity example, not a unit measurement.
+    if not np.isfinite(reference_x1) or reference_x1 <= 0.0:
+        raise ValueError("reference_x1 must be a finite positive magnitude [per pu]")
+    if not np.isfinite(tolerance) or tolerance <= 0.0:
+        raise ValueError("tolerance must be finite and > 0")
 
     R = params.loss_ratio_R
-    g = (1.0 + R * K**2) / (1.0 + R)
-    f = g ** (constants.x + constants.x1 * (K - 1.0))
-    common = params.delta_theta_or_K * f * np.log(g)
-    jacobian = np.column_stack([f, common, common * (K - 1.0)])
+    with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
+        g = (1.0 + R * K**2) / (1.0 + R)
+        f = g ** (constants.x + constants.x1 * (K - 1.0))
+        common = params.delta_theta_or_K * f * np.log(g)
+        jacobian = np.column_stack([f, common, common * (K - 1.0)]) / sigma_K
+    if not np.all(np.isfinite(jacobian)):
+        raise ValueError("load-slope sensitivity is non-finite; check load and noise scales")
 
-    information = jacobian.T @ jacobian / sigma_K**2
     hull = (float(K.min()), float(K.max()))
+    # SVD avoids squaring the condition number in J.T @ J. Its numerical-rank
+    # check also handles two distinct levels repeated many times: three
+    # parameters remain underdetermined regardless of the number of rows. (a)
     try:
-        covariance = np.linalg.inv(information)
+        _, singular_values, vh = np.linalg.svd(jacobian, full_matrices=False)
+        rank_tolerance = max(jacobian.shape) * np.finfo(float).eps * singular_values[0]
+        rank = int(np.count_nonzero(singular_values > rank_tolerance))
+        if rank < 3:
+            raise np.linalg.LinAlgError
+        inverse_weighted = vh.T / singular_values
+        covariance = inverse_weighted @ inverse_weighted.T
         variances = np.diag(covariance)
-        if np.any(variances <= 0.0):
+        if not np.all(np.isfinite(variances)) or np.any(variances <= 0.0):
             raise np.linalg.LinAlgError
     except np.linalg.LinAlgError:
         return LoadSlopeIdentifiability(
             std_x1=float("inf"), correlation_x0_x1=1.0, load_hull=hull, supported=False,
             note=(
-                f"Singular: over {hull[0]:.2f}-{hull[1]:.2f} pu the two exponent terms "
-                f"are indistinguishable. The load-slope is not merely uncertain here, it "
-                f"is undetermined, and no record length or sampling rate changes that."
+                f"Singular or numerically unresolved design over {hull[0]:.2f}-{hull[1]:.2f} "
+                f"pu: the three-parameter bound is undetermined. Repeating the same "
+                f"rank-deficient load levels cannot add missing parameter directions. "
+                f"Use distinct informative levels or independently justified fixed parameters."
             ),
         )
 
     std = np.sqrt(variances)
-    rho = float(covariance[1, 2] / (std[1] * std[2]))
+    rho = float(np.clip(covariance[1, 2] / (std[1] * std[2]), -1.0, 1.0))
     std_x1 = float(std[2])
-    ratio = std_x1 / abs(reference_x1)
+    ratio = std_x1 / reference_x1
     supported = ratio <= tolerance
 
     if supported:
         note = (
             f"Supported: over {hull[0]:.2f}-{hull[1]:.2f} pu the load-slope is bounded to "
-            f"{100 * ratio:.0f} % of a representative value, rho(x0,x1) = {rho:.3f}."
+            f"{100 * ratio:.0f} % of the supplied/example reference, "
+            f"rho(x0,x1) = {rho:.3f}, under the stated IID model assumptions. "
+            f"This is a precision diagnostic, not validation of an overload rating."
         )
     else:
         note = (
             f"NOT supported: over {hull[0]:.2f}-{hull[1]:.2f} pu the bound on the "
-            f"load-slope is {100 * ratio:.0f} % of a representative value, with "
-            f"rho(x0,x1) = {rho:.3f}. Identifying it needs a wider load range reaching "
-            f"above nameplate; nothing else substitutes. Any above-nameplate figure "
-            f"computed from a fixed exponent should be treated as biased LOW."
+            f"load-slope is {100 * ratio:.0f} % of the supplied/example reference, with "
+            f"rho(x0,x1) = {rho:.3f}. More informative load levels, lower noise, or more "
+            f"independent observations can improve this full-rank bound. This result "
+            f"does not establish the direction or magnitude of extrapolation error."
         )
     return LoadSlopeIdentifiability(std_x1, rho, hull, supported, note)
 
@@ -491,12 +526,12 @@ def load_slope_identifiability(
 # The reason no steady-state record can inform it is structural rather than
 # statistical: at steady state the two branches settle to k21*g and (k21-1)*g,
 # whose DIFFERENCE is g regardless of k21. The constant cancels exactly. So the
-# information about k21 lives entirely in the transient, and specifically near
-# the overshoot peak -- roughly k22*tau_w * ln(k21*k22*tau_o / ((k21-1)*tau_o))
-# after a step, which for the ONAF column is around 40 min.
+# information about k21 lives in the transient. Informative observation times
+# depend on both branch time constants and their amplitudes; a peak time from
+# one ONAF example is not a universal commissioning schedule. (a, model algebra)
 #
-# A record that never steps, or that is sampled only long after each step, has
-# no information about k21 at any length.
+# An exactly steady-state record carries no information. Late but not fully
+# settled observations may carry weak information. (a, model algebra)
 # --------------------------------------------------------------------------
 
 
@@ -508,7 +543,8 @@ class OvershootIdentifiability:
     ----------
     std_k21 : Cramer-Rao standard deviation on k21 [-]
     relative : std_k21 as a fraction of the tabulated k21 [-]
-    supported : whether the record supports identifying k21
+    supported : whether the conditional one-parameter precision threshold is met;
+        this does not establish joint identifiability
     note : plain statement of what the numbers mean
     """
 
@@ -530,11 +566,12 @@ def overshoot_identifiability(
     tolerance: float = 0.25,
     step: float = 1e-3,
 ) -> OvershootIdentifiability:
-    """Can this record's hot-spot observations identify k21?
+    """Evaluate k21 precision conditional on all other parameters being known.
 
     Parameters
     ----------
-    time_s, load_pu, ambient_C : the record, as for `fisher_information`
+    time_s, load_pu, ambient_C : record in seconds, per-unit current and degC,
+        respectively, as for `fisher_information`
     params : thermal parameters to evaluate the sensitivity at
     hotspot_index : indices of the hot-spot observations. k21 is invisible in
         top-oil, so only these carry information about it
@@ -550,16 +587,18 @@ def overshoot_identifiability(
     Notes
     -----
     Uses a one-parameter bound: it asks whether the record could pin k21 with
-    everything else known, which is the most generous case. A record failing
-    this bound cannot identify k21 under any joint fit either.
+    everything else known. Failure means the chosen precision threshold is not
+    met even under those assumptions. Passing is not evidence that a joint fit
+    can separate k21, k22 and the winding time constant. The noise model assumes
+    independent Gaussian observations and excludes bias and structural error.
     """
     idx = np.asarray(hotspot_index, dtype=np.intp)
     if idx.size == 0:
         return OvershootIdentifiability(
             float("inf"), float("inf"), False,
-            "No hot-spot observations. k21 is invisible in top-oil, because at "
-            "steady state the two branches differ by g regardless of it, so a "
-            "record without hot-spot reads carries no information about it at all.",
+            "No hot-spot observations. k21 is invisible in top-oil because it "
+            "does not enter the oil equation. This measurement set cannot "
+            "inform k21 in the implemented model.",
         )
     if not np.isfinite(sigma_K) or sigma_K <= 0.0:
         raise ValueError(f"sigma_K must be finite and > 0, got {sigma_K!r}")
@@ -591,15 +630,16 @@ def overshoot_identifiability(
     if supported:
         note = (
             f"Supported: k21 bounded to {100 * relative:.0f} % of its tabulated "
-            f"{k0:g}. The record contains transients sampled while the overshoot "
-            f"is developing."
+            f"{k0:g}, with all other parameters held known. The observations "
+            f"carry transient sensitivity. This is not joint identification "
+            f"or validation of an overload rating."
         )
     else:
         note = (
             f"NOT supported: the bound on k21 is {100 * relative:.0f} % of its "
-            f"tabulated {k0:g}. Information about k21 lives near the overshoot "
-            f"peak, roughly 40 min after a step for this cooling class. Sampling "
-            f"only settled operation, or only long after each step, leaves it "
-            f"unidentifiable however long the record runs."
+            f"reference {k0:g}, even with other parameters known. An informative "
+            f"window near an overshoot peak depends on this unit's branch time "
+            f"constants; there is no universal 40-minute sampling rule. Different "
+            f"timing or more independent transient observations may improve precision."
         )
     return OvershootIdentifiability(std, relative, supported, note)

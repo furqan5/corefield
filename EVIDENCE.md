@@ -6,12 +6,14 @@ Each claim carries a truth-discipline label:
 - **(b)** engineering estimate, with the assumptions it rests on
 - **(c)** inference or judgement
 
-"Verified" here means **reproduced by this repository on this machine**, not "appears in an
-earlier document". The legacy notebooks stored zero cell outputs across all 73 code cells, so
-every number below was re-derived rather than transcribed. `python -m pytest` re-derives them
-again on every run.
+Distinguish a source fact, a reproducible numerical result, and physical validation. A passing
+synthetic test establishes implementation behaviour under its assumptions, not field accuracy.
+Private case studies and published projections are labelled separately below; the public test
+suite does not rerun private measurements or establish permission to publish them.
 
-The **Where verified** column names the test that would fail if the claim stopped being true.
+**28 Aug 2026 correction:** earlier descriptions of a measured 2.5-pu test, automatic diagnostic
+refusals, universal exponent drift, and a same-fit 7.91→1.54 K improvement were too strong.
+The corrected entries below supersede those descriptions. See `docs/validation_scope.md`.
 
 ---
 
@@ -37,11 +39,11 @@ The README quotes the reproduced value, not the published one.
 
 | # | Claim | Label | Where verified |
 |---|---|---|---|
-| 9 | The four parameters are the ones IEC 60076-7 says require a heat-run test with fibre-optic sensors | **(a)** | Checked against the standard 25 Aug 2026. It states these constants can be determined in a prolonged heat-run test, and that k21, k22 and tau_w require fibre-optic sensors |
-| 10 | ONAF constants x=0.8, y=1.3, k11=0.5, k21=2.0, k22=2.0 | **(a)** | Checked against IEC 60076-7:2018 Ed. 2.0, 25 Aug 2026 — all five match, as do tau_o=150 min and tau_w=7 min. `test_physics.py::test_settled_constants_are_unchanged` pins the values in use |
-| 10b | For OD/ODAF, k21 = 1.0, so the overshoot vanishes and the A/B/C separation does not transfer | **(a)** | Same check. `OD_MEDIUM_LARGE_POWER` in `iec60076_7.py`; `verify_k_assignment` returns 0.00 % overshoot for it |
-| 10c | tau_w differs between natural and forced air (10 vs 7 min), so it cannot be shared across cooling stages | **(a)** | Same check. Corrected `staged.SHARED_BY_DEFAULT`, which had wrongly shared it |
-| 11 | The **k-assignment** (which time constant on which branch) is verified | **(a)** | `test_physics.py::test_k_assignment_verified` — three independent numerical checks |
+| 9 | The model's winding parameters require information not present in top-oil alone | **(a), model structure** | Winding parameters do not enter the oil equation. Claims about precise IEC requirements remain UNVERIFIED against a licensed copy |
+| 10 | The implementation retains x=0.8, y=1.3, k11=0.5, k21=2.0, k22=2.0 for its ONAF example | **(a), implementation** | `test_physics.py::test_settled_constants_are_unchanged`; mirror-sourced, not licensed-source verification |
+| 10b | The implemented OD constants set k21=1, removing the slow gradient branch | **(a), model algebra** | `OD_MEDIUM_LARGE_POWER`; does not validate transfer between cooling classes |
+| 10c | The staged estimator does not share τ_w by default | **(a), implementation choice** | `staged.SHARED_BY_DEFAULT`; the cited tabulated priors remain mirror-sourced, not measurements |
+| 11 | The implemented branch assignment passes numerical consistency checks | **(a), implementation only** | `test_physics.py::test_k_assignment_verified`; self-consistency cannot verify the standard or a physical transformer |
 | 12 | Closed-form vs RK4 agreement: 1.097×10⁻⁷ K | **(a)** | same |
 | 13 | Oil reaches 63.2 % of its step at t = k11·τ_o | **(a)** | same |
 | 14 | Gradient overshoot 47.19 % at 41.0 min | **(a)** | same |
@@ -116,15 +118,14 @@ The README quotes the reproduced value, not the published one.
 
 ## First field validation
 
-The underlying data was supplied privately, is not in this repository, and may not be
-redistributed. Results are reportable. These claims are therefore **(a) but not
-reader-reproducible** — a reader can check the reasoning and the code paths, not the numbers.
-That is a weaker standard than everything else in this file and is marked as such.
+The underlying data was supplied privately and is not redistributed. The following numbers
+are recorded internal analyses, not rerun by the public suite. The validation exclusion and
+model choices require review; permission for external reporting must be checked separately.
 
 | # | Claim | Label | Where verified |
 |---|---|---|---|
-| 58 | Out-of-sample hot-spot RMSE **1.54 K** over 35 unseen days, 5 029 observations, τ_w held at Table 4 | **(a)**, not reader-reproducible | private field record (`final_tr3.py`), withheld |
-| 59 | The same fit scores **7.91 K** when the stuck-channel window is included | **(a)**, not reader-reproducible | private field record (`clean_validation.py`), withheld |
+| 58 | Recorded conditional hot-spot RMSE **1.54 K** over 5,029 later-period observations, τ_w held fixed and a constant-load window excluded | **(b), internal reanalysis** | `final_tr3.py`, private; not an independent prospective validation or worst-case bound |
+| 59 | The earlier **7.91 K** score used a different fitting configuration | **(b), internal reanalysis** | `clean_validation.py`, private; not the same fit with/without masking, so a detector-only improvement is not established |
 | 60 | The rejected window holds load at exactly one value (0.01 pu) for 7.07 days while ambient swings 12 K, top-oil swings 11 K and the fan stage keeps switching | **(a)**, not reader-reproducible | private field record (`outage_check.py`), withheld |
 | 61 | A transformer genuinely at 0.01 pu would show a steady oil rise of Δθ_or/(1+R) ≈ 6 K, not the measured 22 K | **(b)** | Follows from the model with the identified Δθ_or and the assumed R = 6 |
 | 62 | The out-of-sample error is not seasonal: a within-segment split, same season, still shows it | **(a)**, not reader-reproducible | private field record (`transfer_test.py`), withheld |
@@ -143,38 +144,55 @@ paper is copyrighted; its tables are not reproduced here.
 |---|---|---|---|
 | 72 | Identified below nameplate and extrapolated, the fixed-exponent model reads **6.35 K low** at 1.60 pu — the unsafe direction | **(a)** | private overload record (`nordman_overload.py`), withheld |
 | 73 | It does **not** beat the generic table it aims to replace: 4.64 K against 4.21 K RMSE across the two held-out overload points | **(a)** | same |
-| 74 | The measured oil exponent is not constant: 0.717, 0.766, 0.846 over successive load intervals | **(a)** | same |
+| 74 | Calculated interval oil power-law exponents are 0.717, 0.766, 0.846 for this ONAF case | **(b), derived quantities** | same; not direct measurements of x1, a proven mechanism, or an ODAF/ONAN slope |
 | 75 | Freeing the load-slope on two sub-nameplate points is **under-determined** and the fit refuses | **(a)** | `overload_refit.py`, withheld |
 | 76 | Fitting a load-slope across the load at which the hot spot changes winding costs **8 K**, worse than making no correction | **(a)** | same |
-| 77 | With amplitudes measured at nameplate (f(1)=1 for any exponent) and both slopes free, the held-out 1.60 pu error is **−2.63 K** hot spot, **−0.97 K** top oil | **(a)** | `overload_anchored.py`, withheld |
-| 78 | That is 59 % of the unsafe bias removed, with x(1.60)=0.790 and y(1.60)=1.369 against tabulated 0.8 and 1.3 | **(a)** | same |
-| 79 | Claim 77 uses a 1.29 pu observation, so it is evidence for a commissioning excursion, **not** for identification from service data | **(a)** | Statement about the experiment's design, verifiable by inspection |
-| 80 | Every fit in claims 72–78 is exactly determined and carries no residual or error bars | **(a)** | Follows from parameter and observation counts |
+| 77 | An exploratory single-winding fit anchored at nameplate and using data through 1.29 pu gives **−2.63 K** hot-spot and **−0.97 K** oil error at 1.60 pu | **(b)** | `overload_anchored.py`; model choices followed inspection of the small dataset. Anchor measurements also have uncertainty |
+| 78 | The errors in claims 72 and 77 concern different fitting specifications and winding-target choices | **(a), experiment design** | Comparing their magnitudes does not establish a matched 59% improvement or a general repair |
+| 79 | Claim 77 uses a 1.29-pu observation | **(a), experiment design** | It does not demonstrate prediction from an exclusively below-nameplate record |
+| 80 | Parameter counting must use independent scalar observations and Jacobian rank, not load-level count alone | **(a), algebra** | A level may supply both oil and winding observations; noise, covariance and degrees of freedom remain to be assessed |
 | 81 | ρ(x₀,x₁) = 0.995 over an in-service load band; sd(x₁) is ~4× the parameter. Over 0.60–1.30 pu it is 5 % | **(a)** | `exponent_identifiability.py` — reader-reproducible, no private data |
-| 82 | The two exponent sensitivities differ only by the factor (K−1), so load range alone separates them | **(a)** | Analytic; derivable from the model |
+| 82 | The exponent sensitivities differ by (K−1); diversity affects rank, while independent count and noise affect precision | **(a)** | Model Jacobian and the additional IID scaling tests in `test_crlb.py` |
 | 83 | Load-dependent exponents are implemented and default to zero, reproducing the fixed form exactly | **(a)** | `test_physics.py::test_zero_slope_reproduces_the_fixed_exponent_exactly` |
 | 84 | A positive slope raises the predicted rise on **both** sides of nameplate, because the loss factor's base is below one for K < 1 | **(a)** | `test_physics.py::test_a_positive_oil_slope_raises_the_predicted_overload_temperature` |
 
-**Not claimed:** that CoreField can compute a safe loading envelope above nameplate from service
-data alone. Four separate tests say it cannot.
+**Not established:** a safe operating envelope from these analyses. This is a limitation of
+the evidence, not a theorem that every sufficiently informative operating archive must fail.
 
-## Transient overload — where the structure wins
+## Transient comparison: corrected provenance and scope, 28 Aug 2026
 
-| # | Claim | Label | Where verified |
+**(a, source)** The Nordman and Lahtinen unit is **ONAF**, not ODAF. Section V and Table VII
+construct a 2.5-pu scenario using response ratios derived from the measured 1.6-pu curves.
+The paper does not report a physically measured 2.5-pu test. Its design and cooling class do
+not establish transferable performance or exponent slopes on other units.
+[Source DOI](https://doi.org/10.1109/TPWRD.2002.807747).
+
+| # | Corrected claim | Label | Evidence and boundary |
 |---|---|---|---|
-| 85 | For a 0.3 → 2.5 pu step held 20 min, the loading guides give R₂₀ = 0.18 (IEC) and 0.23 (IEEE) against a measured 0.56; the corresponding hot spots are 79 and 89 °C against 156 °C | **(a)**, not reader-reproducible | Published tables; private record (`transient_overload.py`) |
-| 86 | This package gives R₂₀ = 0.519 and 160 °C — **89 % of the guides' shortfall recovered, erring 4 K HIGH (conservative)** | **(a)**, not reader-reproducible | same |
-| 87 | On the second winding it over-corrects: 0.487 against a measured 0.39, +13 K | **(a)**, not reader-reproducible | same |
-| 88 | R₂₀ is strongly sensitive to τ_w (0.65→0.23 over 2–40 min), to k21 (0.37→0.66 over 1–3) and to k11 | **(a)**, not reader-reproducible | same. **An earlier written interpretation claimed the opposite and was wrong** |
-| 89 | Inverting the measured R₂₀ gives k21 = 2.29 (120 kV) and 1.25 (410 kV) against a tabulated 2.0 | **(a)**, not reader-reproducible | same. Inherits the tabulated τ_w, and the two windings disagree — quote as a range |
-| 90 | k21 cancels exactly from the steady-state gradient, so no steady record at any load informs it | **(a)** | Analytic: branches settle to k21·g and (k21−1)·g, difference g |
-| 91 | A step sampled through the overshoot bounds k21 to 1.5 %; the same step sampled after settling gives 121 %; constant load gives infinity | **(a)** | `test_crlb.py::test_k21_is_identifiable_from_a_step_sampled_through_the_overshoot` and siblings |
-| 92 | The published max-of-two-windings gradient shows local exponents 1.12, 0.68, 1.67 — a handover detected at 1.14 pu; one winding tracked throughout gives 1.16, 1.30, 1.67 and is not flagged | **(a)** | `test_observability.py::test_a_winding_handover_is_detected` |
-| 93 | Six settled load levels give a p95 prediction error of 2.21 K at an unseen 1.45 pu; sixteen give 1.82 K | **(b)** | Simulation, 200 seeds, σ = 0.5 K (`excursion_levels.py`) |
-| 94 | The same at ten levels: a 0.15 pu hull gives 73.2 K, a 0.90 pu hull gives 1.15 K. **Range dominates level count by ~64× against ~1.2×** | **(b)** | same |
+| 85 | Table VII projects 156 °C for the 120 kV winding at 2.5 pu after 20 min, using R₂₀ = 0.56 derived from the 1.6-pu curves; Tables V/VI give 79/89 °C using the guide methods compared in that paper | **(a), published calculation, not a 2.5-pu measurement** | Source pp. 111–112, Tables V–VII and Section V assumptions |
+| 86 | The private simulation gives approximately 160 °C and R₂₀ = 0.519 under its stated parameter assumptions | **(b)** | `transient_overload.py`; agreement with a projection, not a measured overload validation. The former 4 K physical-test accuracy claim is withdrawn |
+| 87 | The second-winding comparison gives approximately 0.487 versus the source-derived ratio 0.39, and about +13 K versus the source projection | **(b)** | Same script; positive error is not a demonstrated safety margin |
+| 88 | The simulated ratio changes substantially with τ_w, k21 and k11 | **(b)** | Same sensitivity calculation; a normalized ratio does not isolate one parameter or remove dependence on relative oil/winding amplitudes |
+| 89 | Holding the remaining parameters fixed, matching the source-derived ratios implies k21 values of approximately 2.29 and 1.25 | **(b), conditional inversion only** | Same script; not independent identification, a confidence interval, or a third route avoiding hot-spot observations |
+| 90 | k21 cancels from the steady-state gradient | **(a), model algebra** | k21·g − (k21−1)·g = g |
+| 91 | The one-parameter synthetic k21 bound is much tighter with transient observations than with late observations | **(a), conditional numerical test** | `test_crlb.py` overshoot tests; all other parameters are assumed known. Passing does not establish joint identifiability |
+| 92 | The local-exponent heuristic flags the published max-of-windings series | **(a), implementation behaviour only** | `test_observability.py::test_a_winding_handover_is_detected`; not a validated physical detector, and not automatically a fit refusal |
+| 93 | Earlier level-count simulations were exploratory, not an approved commissioning specification | **(b), historical simulation** | `excursion_levels.py`; its six-level cutoff is a code choice, not proof that six distinct loads are mathematically necessary |
+| 94 | Wider, more informative designs can improve precision, but the reported range/count ratios are scenario-specific | **(b)** | Same script; sample count, noise, dwell, covariance and prediction target also matter. No requirement to deliberately overload a service transformer follows |
 
-**Still not claimed:** y1 identified on any real unit; k22 separated from k21; an explanation for
-the 410 kV k21 of 1.25; anything about moisture or insulation life.
+**Still open:** prospective measured-transient validation; reliable joint slope estimation;
+joint k21/k22/time-constant identifiability; validated handling of winding identity and cooling
+changes; replication. No physical mechanism or slope magnitude is established for OD/ODAF or
+ONAN by this ONAF case.
+
+## Cooling-specific precision diagnostics and safe reporting
+
+| # | Claim | Label | Where checked |
+|---|---|---|---|
+| 95 | The illustrative oil-slope reference is not silently reused with OD/ONAN constants | **(a), implementation** | `test_crlb.py::test_other_cooling_classes_require_an_explicit_slope_reference` |
+| 96 | SVD rejects fewer than three independent oil-information directions; repeating a full-rank IID design improves standard error as 1/√N | **(a), model algebra and tests** | `test_two_distinct_levels_cannot_determine_three_oil_parameters`, `test_repeating_identical_full_rank_design_halves_std_at_four_times_count` |
+| 97 | A below-nameplate design can meet a conditional precision threshold without validating overload behaviour | **(a), synthetic test** | `test_informative_below_nameplate_design_does_not_require_overloading` |
+| 98 | The envelope warning does not transfer a single ONAF case-study error into another unit's safety margin | **(a), implementation** | `test_envelope.py::test_extrapolation_beyond_the_fitted_hull_is_flagged` |
 
 ## Package behaviour found and fixed by the field data
 
@@ -203,8 +221,8 @@ Recorded so that absence is deliberate rather than accidental:
   exists (claims 58–66) and its data may not be redistributed, so a reader can audit the method
   and the reasoning but not re-derive the number. It covers one unit, over 0.04–0.90 pu, with
   three of four parameters identified and the fourth tabulated.
-- **No validated claim about loading above nameplate.** The loading envelope extrapolates past
-  the load hull of every record this project has seen. Claim 65.
+- **No validated operational claim about loading above nameplate.** The ODAF records and the
+  exploratory ONAF reanalysis do not establish one. Claims 65 and 85–89.
 - **No comparison against commercial winding-temperature indicators.** A "±5–15 K" figure appears
   in the legacy v1 report with **no citation anywhere** (AUDIT.md §5.2). It is the denominator of
   an attractive pitch line and it is unsourced, so it does not appear in the README, the demo, or

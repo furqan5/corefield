@@ -15,25 +15,18 @@
 """Two-exponential transformer thermal model, IEC 60076-7 structure.
 
 ============================================================================
-IEC PROVENANCE
+IEC PROVENANCE -- MIRROR-SOURCED, UNVERIFIED AGAINST A LICENSED COPY
 
-The two-exponential structure and the ONAF constants in this module were
-checked against the published text of IEC 60076-7:2018 Edition 2.0 on
-25 Aug 2026 and MATCH IT: all five cooling-class constants, both tabulated
-time constants, and the assignment of each time constant to its own gradient
-branch. The engineering question -- are these numbers right -- is closed.
+(a, project provenance) The earlier 25 Aug 2026 check used mirror-sourced
+text. It does not satisfy the project's licensed-source verification gate.
+Retain this warning until an authorised copy has been checked and recorded.
+The settled ONAF constants are unchanged; they are not a compliance claim.
+This repository does not redistribute the standard's text, tables or figures.
 
-The licensing question is not, and is separate. IEC standards are copyrighted
-and sold. This repository reproduces no text, table or figure from the
-standard and treats the constants as engineering facts. Anyone using this
-software where standards compliance is claimed must hold their own copy from
-an authorised distributor, and CoreField's own client-facing work should not
-proceed until it does.
-
-Three numerical checks in `corefield.verification` confirm the branch
-assignment independently of any document, and a wrong assignment fails all
-three: closed-form vs RK4 agreement to 1.10e-7 K, oil reaching 63.2 % of its
-step at t = k11*tau_o, and a 47.2 % gradient overshoot at t = 41 min.
+(a, implementation tests) `corefield.verification` checks numerical
+consistency of the implemented branch assignment, including closed-form/RK4
+agreement and step responses. Self-consistency is not independent evidence
+of standards compliance or physical validity on a transformer.
 ============================================================================
 
 Model
@@ -132,9 +125,8 @@ Solver = Literal["rk4", "euler"]
 class CoolingConstants:
     """Empirical exponents and time-constant multipliers for one cooling class.
 
-    All dimensionless. See the provenance banner at module top: the values
-    have been checked against the standard's published text and match; the
-    licensing requirement on the user is separate and still stands.
+    All dimensionless. The constants remain mirror-sourced and UNVERIFIED
+    against a licensed standard; see the module provenance banner.
 
     Attributes
     ----------
@@ -157,12 +149,12 @@ class CoolingConstants:
     #: Zero reproduces the standard's fixed exponent exactly, and is the
     #: default, so nothing changes unless a caller asks for it.
     #:
-    #: WHY THIS EXISTS. Published fibre-optic measurements on a 400 MVA ONAF
-    #: unit give an oil exponent of 0.717, 0.766 and 0.846 over successive load
-    #: intervals from 0.65 to 1.60 pu -- it climbs with load rather than
-    #: sitting at the tabulated 0.8. Holding it fixed and extrapolating from
-    #: below nameplate under-predicts the hot spot at overload, in the unsafe
-    #: direction. See private/OVERLOAD_FINDING.md.
+    #: (b) Experimental extension motivated by exploratory fits to the ONAF
+    #: test in Nordman and Lahtinen (2003), DOI 10.1109/TPWRD.2002.807747.
+    #: Calculated interval exponents are not direct measurements of this x1.
+    #: Neither their magnitude nor a physical cause is established across
+    #: other units or cooling classes. The caller supplies the slope; the
+    #: production four-parameter estimator does not identify it automatically.
     x1: float = 0.0
     #: Load-slope of the winding exponent: y(K) = y + y1*(K-1). Same rationale.
     y1: float = 0.0
@@ -190,8 +182,8 @@ class CoolingConstants:
 
 
 #: Medium & large power transformers, ONAF. Settled per CLAUDE.md -- do not
-#: change without an explicit instruction. Checked against the standard
-#: (25 Aug 2026): all five values match.
+#: change without an explicit instruction. Mirror-sourced; UNVERIFIED against
+#: a licensed standard. The 25 Aug 2026 mirror check does not close that gate.
 #:
 #: Note on portability (label (c), from methods v4 section 9.3): other cooling
 #: classes are a column swap. Small distribution ONAN has k21 = 1.0, which

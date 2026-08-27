@@ -50,9 +50,10 @@ source them and record their provenance. See corefield/envelope.py.
 NO WARRANTY OF FITNESS FOR TRANSFORMER OPERATION
 --------------------------------------------------------------------------
 
-Beyond the disclaimer in the Apache License, note specifically: every result
-this software has ever produced came from synthetic data. It has never been
-validated against measurements from a real transformer. Decisions about
+Beyond the disclaimer in the Apache License, note specifically: synthetic
+tests, qualified retrospective operating-data analysis, and exploratory
+comparisons with published measurements do not establish fitness for
+operational loading. No operational overload capability is validated. Decisions about
 loading, derating, or overloading electrical plant carry safety and asset
 consequences, and this software must not be relied upon as the sole basis for
 any such decision. See the Limitations section of README.md.

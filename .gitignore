@@ -24,6 +24,7 @@ MANIFEST.md
 # identifying detail was removed. Published alongside a founder location, that
 # is a pointer to the party being protected. Keep it local.
 CLAUDE.md
+AGENTS.md
 
 # The pre-commit hook's term list. Gitignored on purpose: a committed list of
 # terms-to-exclude would publish the very terms it protects. See

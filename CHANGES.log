@@ -1,0 +1,40 @@
+# CoreField shared development log
+# Existing entries are historical records; append corrections rather than erasing them.
+
+[2026-08-28 03:00 +05:00] Agent: Codex
+Task: Cooling-class scope, overload provenance, and honest application positioning.
+Completed:
+  - corefield/crlb.py: require an explicit slope-reference magnitude outside the unchanged
+    ONAF example; validate inputs; use SVD for rank and conditional covariance.
+  - Corrected precision diagnostics: independent sample count can help a full-rank design;
+    a conditional one-parameter k21 bound does not establish joint identification.
+  - corefield/envelope.py: removed transfer of one ONAF case-study error as a safety margin.
+  - Restored the mirror-sourced, licensed-copy-UNVERIFIED IEC banners.
+  - README.md, EVIDENCE.md, NOTICE and PREDICTIONS.md: corrected projected-versus-measured
+    overload evidence, archived-data qualifications and interpretation of earlier scores.
+  - Added docs/validation_scope.md with source provenance and remaining validation gates.
+  - Updated private application, correspondence and plain-language guidance; older drafts
+    are preserved locally. No email or application was sent. No paper/deck ZIP was approved.
+  - Added AGENTS.md to the same private-instruction exclusion as CLAUDE.md.
+Verification:
+  - Focused CRLB/envelope run: 79 passed, 1 slow test deselected.
+  - Full suite: 245 passed in 22.84 s, including slow tests and the app.
+  - First full run: 211 passed; 34 setups blocked by a shared Windows temp-directory ACL.
+    Rerun used a fresh project-local scratch directory with approved permissions.
+  - private/transient_overload.py reran: 160.2 / 147.2 degC versus source projections
+    156 / 134 degC. These are scenario differences, not measured overload error bounds.
+  - Python compile checks and git diff --check passed.
+  - New local .venv: Python 3.14.6, NumPy 2.5.2, SciPy 1.18.1, pandas 3.0.5.
+Decisions:
+  - No change to settled ONAF constants or the thermal integration equations.
+  - No neural network, no new claim of safe overload, no assumed hardware deployment.
+  - Source papers, private data/drafts, manuscript and internal instructions remain untracked.
+  - Attached handoff templates were context; they did not overwrite project instructions.
+Next:
+  - Obtain/read the ODAF source article and evaluate actual measured transient traces.
+  - Study joint dynamic-parameter information and validate winding/cooling identity handling.
+  - Verify licensed standards, reporting permissions and passive measurement-chain readiness.
+  - Refresh and review presentation/manuscript artifacts before any external submission.
+Open decisions:
+  - Application fit, participation feasibility and customer willingness to pay remain unproven.
+  - Correspondence drafts are for founder review; acknowledgment is not endorsement.

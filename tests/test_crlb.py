@@ -322,8 +322,8 @@ def test_efficiency_ratio_requires_an_explicit_convention(fits_200, bound_n17):
 #
 # This is the parameter that governs above-nameplate behaviour, and the one
 # whose absence made a fixed-exponent model read 6.35 K LOW at 1.60 pu against
-# published measurements. Its two sensitivities differ only by (K-1), so the
-# load hull is the whole of what makes it identifiable.
+# published ONAF measurements. Its sensitivities differ by (K-1), so load
+# diversity affects rank. Independent count and noise also affect precision.
 # --------------------------------------------------------------------------
 
 
@@ -378,8 +378,8 @@ def test_a_single_load_is_singular_rather_than_merely_uncertain():
     assert "undetermined" in result.note
 
 
-def test_more_record_at_the_same_load_does_not_help():
-    """The point of the finding: length is not a substitute for range."""
+def test_more_independent_samples_improve_a_narrow_full_rank_bound():
+    """A hundredfold IID count improves precision tenfold, even if still inadequate."""
     from corefield.crlb import load_slope_identifiability
 
     short = load_slope_identifiability(
@@ -389,6 +389,90 @@ def test_more_record_at_the_same_load_does_not_help():
     # A hundredfold more data buys the square root of a hundred at best, which
     # is nowhere near enough to cross the threshold from a hull this narrow.
     assert not short.supported and not long.supported
+    assert long.std_x1 == pytest.approx(short.std_x1 / 10, rel=0.03)
+
+
+def test_repeating_identical_full_rank_design_halves_std_at_four_times_count():
+    """(a, synthetic IID model) Count matters when rank is already sufficient."""
+    from corefield.crlb import load_slope_identifiability
+
+    loads = np.linspace(0.80, 0.92, 200)
+    short = load_slope_identifiability(loads, _slope_params(), 0.5)
+    longer = load_slope_identifiability(np.tile(loads, 4), _slope_params(), 0.5)
+    assert longer.std_x1 == pytest.approx(short.std_x1 / 2, rel=1e-8)
+
+
+def test_two_distinct_levels_cannot_determine_three_oil_parameters():
+    """(a, algebra) More rows do not create a third independent direction."""
+    from corefield.crlb import load_slope_identifiability
+
+    result = load_slope_identifiability(np.tile([0.6, 1.2], 100), _slope_params(), 0.5)
+    assert not result.supported
+    assert np.isinf(result.std_x1)
+    assert "undetermined" in result.note
+
+
+def test_informative_below_nameplate_design_does_not_require_overloading():
+    """(a, synthetic design) Precision is not a rule requiring K > 1."""
+    from corefield.crlb import load_slope_identifiability
+
+    result = load_slope_identifiability(np.linspace(0.3, 0.95, 400), _slope_params(), 0.5)
+    assert result.supported
+    assert result.load_hull[1] < 1.0
+    assert "not validation" in result.note
+
+
+@pytest.mark.parametrize("cooling_name", ["OD_MEDIUM_LARGE_POWER", "ONAN_MEDIUM_LARGE_POWER"])
+def test_other_cooling_classes_require_an_explicit_slope_reference(cooling_name):
+    """The illustrative ONAF slope must not be silently exported to OD or ONAN."""
+    from corefield import iec60076_7
+    from corefield.crlb import load_slope_identifiability
+
+    constants = getattr(iec60076_7, cooling_name)
+    loads = np.linspace(0.6, 1.1, 100)
+    with pytest.raises(ValueError, match="reference_x1 must be supplied"):
+        load_slope_identifiability(loads, _slope_params(), 0.5, constants)
+    # This reference is a synthetic test magnitude, not an OD/ONAN measurement.
+    result = load_slope_identifiability(
+        loads, _slope_params(), 0.5, constants, reference_x1=0.1
+    )
+    assert np.isfinite(result.std_x1)
+
+
+@pytest.mark.parametrize("reference", [0.0, -0.1, np.nan, np.inf])
+def test_invalid_slope_reference_is_rejected(reference):
+    from corefield.crlb import load_slope_identifiability
+
+    with pytest.raises(ValueError, match="reference_x1 must be a finite positive"):
+        load_slope_identifiability(
+            np.linspace(0.6, 1.1, 100), _slope_params(), 0.5, reference_x1=reference
+        )
+
+
+@pytest.mark.parametrize("tolerance", [0.0, -0.1, np.nan, np.inf])
+def test_invalid_slope_precision_tolerance_is_rejected(tolerance):
+    from corefield.crlb import load_slope_identifiability
+
+    with pytest.raises(ValueError, match="tolerance must be finite and > 0"):
+        load_slope_identifiability(
+            np.linspace(0.6, 1.1, 100), _slope_params(), 0.5, tolerance=tolerance
+        )
+
+
+def test_slope_design_must_be_one_dimensional():
+    from corefield.crlb import load_slope_identifiability
+
+    with pytest.raises(ValueError, match="one-dimensional"):
+        load_slope_identifiability(np.ones((4, 2)), _slope_params(), 0.5)
+
+
+def test_slope_diagnostic_does_not_assign_a_direction_to_extrapolation_error():
+    from corefield.crlb import load_slope_identifiability
+
+    result = load_slope_identifiability(np.linspace(0.82, 0.88, 200), _slope_params(), 0.5)
+    assert not result.supported
+    assert "does not establish the direction" in result.note
+    assert "biased LOW" not in result.note
 
 
 @pytest.mark.parametrize("bad, match", [
@@ -439,6 +523,8 @@ def test_k21_is_identifiable_from_a_step_sampled_through_the_overshoot():
     result = overshoot_identifiability(t, load, ambient, params, idx, 0.5)
     assert result.supported
     assert result.relative < 0.1
+    assert "all other parameters held known" in result.note
+    assert "not joint identification" in result.note
 
 
 def test_k21_is_not_identifiable_from_the_same_step_sampled_late():

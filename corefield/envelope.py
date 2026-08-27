@@ -521,22 +521,20 @@ def loading_envelope(
         if k_max > hull_high:
             notes.append(
                 f"{k_max:.3f} pu is ABOVE the {hull_low:.2f}-{hull_high:.2f} pu hull the "
-                f"parameters were identified over. This is extrapolation, and it has now "
-                f"been MEASURED rather than reasoned about: against published fibre-optic "
-                f"measurements on a 400 MVA ONAF unit, a fixed-exponent model identified "
-                f"below nameplate read 6.35 K LOW at 1.60 pu -- the unsafe direction, and "
-                f"worse than the generic table it replaces. The cause is that the oil "
-                f"exponent climbs with load while this model holds it fixed. Unless the "
-                f"cooling constants carry a non-zero load-slope identified over a load "
-                f"range that supports it, treat any above-nameplate figure here as biased "
-                f"LOW by several kelvin and carry that as margin."
+                f"parameters were identified over. This is extrapolation, not a validated "
+                f"operating rating. An exploratory fit to one published ONAF test read "
+                f"6.35 K LOW at 1.60 pu, but that error is not transferable to this unit "
+                f"or cooling class. Neither its magnitude nor its sign supplies a safety "
+                f"margin. A non-zero load-slope does not validate extrapolation. Keep "
+                f"this result in research/shadow mode pending unit-specific validation "
+                f"and utility approval; even the fitted hull is not a certified domain."
             )
         if k_max > hull_high and getattr(constants, "x1", 0.0) == 0.0:
             notes.append(
                 "The cooling constants in use have x1 = 0, i.e. a FIXED oil exponent. That "
-                "is the configuration measured to read low above nameplate. See "
-                "`crlb.load_slope_identifiability` for whether the record supports "
-                "identifying the slope at all."
+                "assumption has not been validated outside this fitted load hull. "
+                "`crlb.load_slope_identifiability` is a conditional precision diagnostic, "
+                "not an estimator, a cooling-class transfer rule, or a safety certificate."
             )
 
     headroom = conservative_headroom = None
