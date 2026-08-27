@@ -79,6 +79,8 @@ __all__ = [
     "fisher_information",
     "cramer_rao_bound",
     "efficiency_ratio",
+    "LoadSlopeIdentifiability",
+    "load_slope_identifiability",
 ]
 
 #: Parameter order everywhere in this package.
@@ -341,3 +343,135 @@ def efficiency_ratio(
         reference = bound.std_absolute
 
     return {name: float(o / r) for name, o, r in zip(PARAMETER_NAMES, observed, reference)}
+
+
+# --------------------------------------------------------------------------
+# Identifiability of the load-slope of the oil exponent
+#
+# The steady oil rise is dtheta_or * g(K)^x(K) with g = (1+R K^2)/(1+R). Under
+# a load-dependent exponent x(K) = x0 + x1*(K-1) the two sensitivities are
+#
+#     d/dx0 = dtheta_or * g^x * ln g
+#     d/dx1 = dtheta_or * g^x * ln g * (K - 1)
+#
+# They differ ONLY by the factor (K-1). The two Jacobian columns are therefore
+# exactly collinear at a single load and separate only in proportion to how much
+# (K-1) varies across the record. For this parameter the load hull is not one
+# influence on identifiability among several -- it is the whole of it.
+#
+# This matters because x1 is the parameter that governs above-nameplate
+# behaviour, and a record confined to the narrow band an in-service transformer
+# occupies cannot inform it at any record length or sampling rate.
+# --------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class LoadSlopeIdentifiability:
+    """Whether a record's load hull can support a load-dependent oil exponent.
+
+    Attributes
+    ----------
+    std_x1 : Cramer-Rao standard deviation on the load-slope x1 [per pu]
+    correlation_x0_x1 : correlation between the two exponent terms [-]. As this
+        approaches 1 the pair becomes indistinguishable.
+    load_hull : (min, max) of the load actually present [pu]
+    supported : whether the record supports identifying x1 at all
+    note : plain statement of what the numbers mean
+    """
+
+    std_x1: float
+    correlation_x0_x1: float
+    load_hull: tuple[float, float]
+    supported: bool
+    note: str
+
+
+def load_slope_identifiability(
+    load_pu: NDArray[np.float64],
+    params: ThermalParams,
+    sigma_K: float,
+    constants: CoolingConstants = ONAF_MEDIUM_LARGE_POWER,
+    *,
+    reference_x1: float = 0.21,
+    tolerance: float = 0.25,
+) -> LoadSlopeIdentifiability:
+    """Can this record's load hull identify the oil exponent's load-slope?
+
+    Parameters
+    ----------
+    load_pu : the load actually present in the record [pu]. Steady-state
+        observations are assumed; this bounds the amplitude information, which
+        is where the exponent lives.
+    params : thermal parameters, for dtheta_or and the loss ratio
+    sigma_K : top-oil measurement noise [K]
+    constants : cooling-class constants
+    reference_x1 : the slope magnitude to judge the bound against [per pu].
+        Default 0.21 is an ENGINEERING ESTIMATE from published fibre-optic
+        measurements on a 400 MVA ONAF unit, whose oil exponent moved 0.717 ->
+        0.846 across 0.65-1.60 pu. It is not a universal constant and a unit
+        with a flatter cooling characteristic would need a wider hull.
+    tolerance : the largest std_x1 / reference_x1 still called supported
+
+    Returns
+    -------
+    LoadSlopeIdentifiability
+
+    Notes
+    -----
+    Returns `supported=False` rather than raising, because the caller may
+    legitimately want the number in order to design a commissioning excursion
+    that WOULD support it.
+    """
+    K = np.asarray(load_pu, dtype=np.float64).ravel()
+    if K.size < 2:
+        raise ValueError("load_pu must contain at least two samples")
+    if not np.all(np.isfinite(K)):
+        raise ValueError("load_pu contains non-finite values")
+    if np.any(K < 0.0):
+        raise ValueError("load_pu contains negative load")
+    if not np.isfinite(sigma_K) or sigma_K <= 0.0:
+        raise ValueError(f"sigma_K must be finite and > 0, got {sigma_K!r}")
+
+    R = params.loss_ratio_R
+    g = (1.0 + R * K**2) / (1.0 + R)
+    f = g ** (constants.x + constants.x1 * (K - 1.0))
+    common = params.delta_theta_or_K * f * np.log(g)
+    jacobian = np.column_stack([f, common, common * (K - 1.0)])
+
+    information = jacobian.T @ jacobian / sigma_K**2
+    hull = (float(K.min()), float(K.max()))
+    try:
+        covariance = np.linalg.inv(information)
+        variances = np.diag(covariance)
+        if np.any(variances <= 0.0):
+            raise np.linalg.LinAlgError
+    except np.linalg.LinAlgError:
+        return LoadSlopeIdentifiability(
+            std_x1=float("inf"), correlation_x0_x1=1.0, load_hull=hull, supported=False,
+            note=(
+                f"Singular: over {hull[0]:.2f}-{hull[1]:.2f} pu the two exponent terms "
+                f"are indistinguishable. The load-slope is not merely uncertain here, it "
+                f"is undetermined, and no record length or sampling rate changes that."
+            ),
+        )
+
+    std = np.sqrt(variances)
+    rho = float(covariance[1, 2] / (std[1] * std[2]))
+    std_x1 = float(std[2])
+    ratio = std_x1 / abs(reference_x1)
+    supported = ratio <= tolerance
+
+    if supported:
+        note = (
+            f"Supported: over {hull[0]:.2f}-{hull[1]:.2f} pu the load-slope is bounded to "
+            f"{100 * ratio:.0f} % of a representative value, rho(x0,x1) = {rho:.3f}."
+        )
+    else:
+        note = (
+            f"NOT supported: over {hull[0]:.2f}-{hull[1]:.2f} pu the bound on the "
+            f"load-slope is {100 * ratio:.0f} % of a representative value, with "
+            f"rho(x0,x1) = {rho:.3f}. Identifying it needs a wider load range reaching "
+            f"above nameplate; nothing else substitutes. Any above-nameplate figure "
+            f"computed from a fixed exponent should be treated as biased LOW."
+        )
+    return LoadSlopeIdentifiability(std_x1, rho, hull, supported, note)

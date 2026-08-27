@@ -521,10 +521,22 @@ def loading_envelope(
         if k_max > hull_high:
             notes.append(
                 f"{k_max:.3f} pu is ABOVE the {hull_low:.2f}-{hull_high:.2f} pu hull the "
-                f"parameters were identified over. This is extrapolation -- the regime "
-                f"where the falsified single-exponential models read +5.76 K high. Model C "
-                f"held to 0.32 K worst-case at 1.30 pu on synthetic data, but that "
-                f"certifies parameter-error propagation, not structural risk."
+                f"parameters were identified over. This is extrapolation, and it has now "
+                f"been MEASURED rather than reasoned about: against published fibre-optic "
+                f"measurements on a 400 MVA ONAF unit, a fixed-exponent model identified "
+                f"below nameplate read 6.35 K LOW at 1.60 pu -- the unsafe direction, and "
+                f"worse than the generic table it replaces. The cause is that the oil "
+                f"exponent climbs with load while this model holds it fixed. Unless the "
+                f"cooling constants carry a non-zero load-slope identified over a load "
+                f"range that supports it, treat any above-nameplate figure here as biased "
+                f"LOW by several kelvin and carry that as margin."
+            )
+        if k_max > hull_high and getattr(constants, "x1", 0.0) == 0.0:
+            notes.append(
+                "The cooling constants in use have x1 = 0, i.e. a FIXED oil exponent. That "
+                "is the configuration measured to read low above nameplate. See "
+                "`crlb.load_slope_identifiability` for whether the record supports "
+                "identifying the slope at all."
             )
 
     headroom = conservative_headroom = None

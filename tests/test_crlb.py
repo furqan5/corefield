@@ -315,3 +315,90 @@ def test_efficiency_ratio_requires_an_explicit_convention(fits_200, bound_n17):
         efficiency_ratio(fits_200, TRUTH_PARAMS, bound_n17)  # type: ignore[call-arg]
     with pytest.raises(ValueError, match="convention"):
         efficiency_ratio(fits_200, TRUTH_PARAMS, bound_n17, convention="bogus")  # type: ignore[arg-type]
+
+
+# --------------------------------------------------------------------------
+# Identifiability of the oil exponent's load-slope
+#
+# This is the parameter that governs above-nameplate behaviour, and the one
+# whose absence made a fixed-exponent model read 6.35 K LOW at 1.60 pu against
+# published measurements. Its two sensitivities differ only by (K-1), so the
+# load hull is the whole of what makes it identifiable.
+# --------------------------------------------------------------------------
+
+
+def _slope_params():
+    from corefield.iec60076_7 import ThermalParams
+
+    return ThermalParams(delta_theta_or_K=38.0, tau_o_min=150.0,
+                         delta_theta_hr_K=20.0, tau_w_min=7.0)
+
+
+def test_a_narrow_in_service_band_cannot_identify_the_load_slope():
+    """The band a working transformer occupies is not enough, and must say so."""
+    from corefield.crlb import load_slope_identifiability
+
+    result = load_slope_identifiability(
+        np.linspace(0.80, 0.92, 400), _slope_params(), 0.5)
+    assert not result.supported
+    assert result.correlation_x0_x1 > 0.98
+    assert "NOT supported" in result.note
+
+
+def test_a_commissioning_excursion_does_identify_it():
+    from corefield.crlb import load_slope_identifiability
+
+    result = load_slope_identifiability(
+        np.linspace(0.60, 1.30, 400), _slope_params(), 0.5)
+    assert result.supported
+    assert result.correlation_x0_x1 < 0.5
+    assert result.load_hull == pytest.approx((0.60, 1.30))
+
+
+def test_widening_the_hull_monotonically_improves_the_bound():
+    """Load range is the whole mechanism, so the bound must track it."""
+    from corefield.crlb import load_slope_identifiability
+
+    previous = float("inf")
+    for half in (0.05, 0.10, 0.20, 0.30, 0.40):
+        result = load_slope_identifiability(
+            np.linspace(0.85 - half, 0.85 + half, 400), _slope_params(), 0.5)
+        assert result.std_x1 < previous, "a wider hull must not weaken the bound"
+        previous = result.std_x1
+
+
+def test_a_single_load_is_singular_rather_than_merely_uncertain():
+    """At one load the two exponent terms are the same column. Say undetermined."""
+    from corefield.crlb import load_slope_identifiability
+
+    result = load_slope_identifiability(
+        np.full(200, 0.85), _slope_params(), 0.5)
+    assert not result.supported
+    assert not np.isfinite(result.std_x1)
+    assert "undetermined" in result.note
+
+
+def test_more_record_at_the_same_load_does_not_help():
+    """The point of the finding: length is not a substitute for range."""
+    from corefield.crlb import load_slope_identifiability
+
+    short = load_slope_identifiability(
+        np.linspace(0.82, 0.88, 200), _slope_params(), 0.5)
+    long = load_slope_identifiability(
+        np.linspace(0.82, 0.88, 20000), _slope_params(), 0.5)
+    # A hundredfold more data buys the square root of a hundred at best, which
+    # is nowhere near enough to cross the threshold from a hull this narrow.
+    assert not short.supported and not long.supported
+
+
+@pytest.mark.parametrize("bad, match", [
+    (dict(load_pu=np.array([0.8]), sigma_K=0.5), "at least two samples"),
+    (dict(load_pu=np.array([0.8, np.nan]), sigma_K=0.5), "non-finite"),
+    (dict(load_pu=np.array([0.8, -0.1]), sigma_K=0.5), "negative load"),
+    (dict(load_pu=np.array([0.8, 1.1]), sigma_K=0.0), "must be finite and > 0"),
+])
+def test_malformed_input_is_refused(bad, match):
+    from corefield.crlb import load_slope_identifiability
+
+    with pytest.raises(ValueError, match=match):
+        load_slope_identifiability(bad["load_pu"], _slope_params(), bad["sigma_K"])

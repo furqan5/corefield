@@ -315,11 +315,26 @@ def test_headroom_is_never_negative():
 
 
 def test_extrapolation_beyond_the_fitted_hull_is_flagged():
-    """Above the identified hull the answer must carry the warning that earned itself."""
+    """Above the identified hull the answer must carry the warning that earned itself.
+
+    The warning used to quote the synthetic +5.76 K over-prediction of the
+    falsified single-exponential models. It now quotes the MEASURED 6.35 K
+    under-prediction of this package's own fixed-exponent model against
+    published fibre-optic overload measurements, because that is the number
+    that describes what the caller is actually holding, and it points the
+    opposite way: low, not high.
+    """
     envelope = _envelope(fitted_load_hull=(0.6, 1.2))
     assert envelope.k_max_pu > 1.2
     assert any("extrapolation" in n for n in envelope.notes)
-    assert any("+5.76 K" in n for n in envelope.notes)
+    assert any("6.35 K LOW" in n for n in envelope.notes)
+
+
+def test_a_fixed_exponent_above_the_hull_says_so_explicitly():
+    """A caller extrapolating with x1 = 0 is in the configuration that was measured
+    to read low, and must be told which configuration they are in."""
+    envelope = _envelope(fitted_load_hull=(0.6, 1.2))
+    assert any("x1 = 0" in n for n in envelope.notes)
 
 
 def test_no_extrapolation_flag_when_inside_the_hull():
