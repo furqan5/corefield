@@ -86,6 +86,7 @@ from .iec60076_7 import (
 )
 
 __all__ = [
+    "CLEAN_COOLER_PRECONDITION",
     "SHARED_BY_DEFAULT",
     "STRUCTURAL_MARGIN",
     "StagedThermalParams",
@@ -94,6 +95,31 @@ __all__ = [
     "simulate_staged",
     "identify_staged",
 ]
+
+#: Stated on every staged identification, because no channel in the record can
+#: detect the condition it describes.
+#:
+#: The oil-to-air thermal resistance is not constant over the life of a cooler.
+#: External fouling of the finned tubes -- pollen, seed fluff, dust, corrosion --
+#: reduces exchange efficiency, and the loss appears in an identification as a
+#: LARGER rated oil rise. Identify on a fouled cooler and the fouling is baked
+#: into delta_theta_or, where it looks like a property of the transformer.
+#:
+#: The failure is one-directional and unsafe in the other direction: parameters
+#: identified when clean, applied later when fouled, under-predict the oil rise
+#: and therefore the hot spot. The published fleet practice is to re-identify
+#: periodically and read the drift in the rated oil rise as a maintenance
+#: signal, which requires knowing the cooler was clean at identification time.
+#:
+#: This is a precondition on the CALLER, asserted here rather than checked,
+#: because none of load, ambient, top-oil or stage label carries the answer.
+CLEAN_COOLER_PRECONDITION: str = (
+    "identified parameters assume the coolers were clean and fully serviceable "
+    "over the identification window. External fouling inflates the rated oil "
+    "rise; parameters identified clean and applied fouled under-predict the hot "
+    "spot. Re-identify after cleaning, and treat drift in delta_theta_or at a "
+    "fixed cooling stage as a cooler-efficiency signal, not a model error."
+)
 
 #: Parameters held common across cooling stages unless told otherwise.
 #: Only the rated gradient. tau_w is NOT shared -- see the module docstring:
@@ -217,6 +243,7 @@ class StagedIdentificationResult:
             )
         for w in self.warnings:
             lines.append(f"  WARNING: {w}")
+        lines.append("  PRECONDITION: " + CLEAN_COOLER_PRECONDITION)
         return "\n".join(lines)
 
 
@@ -630,7 +657,15 @@ def identify_staged(
             "or `shared` set too loose for the data available. A parameter railed "
             "against the tau_w < tau_o constraint means the winding branch has no "
             "support in this record: the value reported is set by the constraint, "
-            "not measured."
+            "not measured.\n"
+            "This refusal is a statement about THIS model form, not about the "
+            "record. The IEC two-exponential form is excited by load variation, so "
+            "a near-constant load starves it. A model parameterised differently -- "
+            "on the operating fraction of the cooling plant and on oil viscosity, "
+            "as published fleet models are -- draws its excitation from stage "
+            "switching and oil-temperature range instead, and can be identifiable "
+            "on the same record. Do not report a refusal here as evidence that the "
+            "record carries no thermal information."
         )
 
     params = StagedThermalParams(

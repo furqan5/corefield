@@ -13,7 +13,7 @@ Reproduce it yourself:
 python -m pytest
 ```
 
-91 tests, ~42 s on a CPU-only laptop. No GPU, no network, no paid services.
+248 tests, ~61 s on a CPU-only laptop. No GPU, no network, no paid services.
 
 ---
 

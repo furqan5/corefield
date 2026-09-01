@@ -38,3 +38,71 @@ Next:
 Open decisions:
   - Application fit, participation feasibility and customer willingness to pay remain unproven.
   - Correspondence drafts are for founder review; acknowledgment is not endorsement.
+
+================================================================================
+2026-09-01  The published ODAF fleet article was obtained from its author and read
+================================================================================
+Context:
+  - L. Paulhiac and R. Desquiens, "Dynamic Thermal Model for Oil Directed Air Forced
+    Power Transformers With Cooling Stage Representation," IEEE Trans. Power Del.,
+    vol. 37, no. 5, pp. 4135-4144, Oct. 2022, doi 10.1109/TPWRD.2022.3145003.
+    Sent by an author. The copy is licence-stamped, stays untracked, and is not
+    redistributed. The five-week open item "obtain the article" is closed.
+Findings that cost us something:
+  - That article's Table IV names the three units of the source dataset. It publishes
+    fitted parameters and out-of-sample RMSE for the same transformers used in the
+    private field-validation work. It is direct prior art, not adjacent work.
+  - Its stated applications include cooling-efficiency monitoring and load-capability
+    evaluation, with a measured cleaning case. No novelty is claimed here for either.
+    A prior internal note calling fouling detection an opportunity was withdrawn.
+Findings that help:
+  - Loss ratio for the 360 MVA unit sourced at R = 612/90 = 6.8, replacing an assumed
+    6.0. The same fit then gives 1.55 K out-of-sample hot-spot RMSE, against 1.54 K.
+    The number recorded is the measured one; it rests on a sourced constant now.
+  - That model treats the winding time constant as a required input, not a fitted
+    parameter, which is the convention already used here.
+  - Its own first cooling stage on that unit falls outside its theoretical assumptions
+    and is handled by an empirical special case.
+  - It reports no confidence intervals, no identifiability analysis, no information
+    bound and no refusal criterion. The identifiability work remains the differentiator,
+    now checked against the nearest paper rather than assumed.
+Hypothesis tested and FALSIFIED:
+  - private/viscosity_exponent.py asked whether that article's oil-viscosity correction
+    explains the ONAF apparent-exponent drift recorded here. Two falsifiers were stated
+    before the run and both fired: the coefficient lands at 0.55-0.70 against a
+    published 0.25-0.45, and held-out error roughly doubles (RMSE 4.41 -> 7.92 K).
+    Decisively, the implied apparent exponent FALLS with load where the measurement
+    RISES. Viscosity is not the mechanism. The buoyancy reading is unaffected and the
+    load-dependent exponent stays empirical.
+  - This is why the reply to that author was rewritten before sending. An earlier draft
+    asserted the opposite.
+Code:
+  - staged.py: CLEAN_COOLER_PRECONDITION, stated on every staged report. Fouling is
+    undetectable from load, ambient, top-oil or stage label, and inflates the rated oil
+    rise; parameters identified clean and applied fouled under-predict the hot spot.
+  - staged.py, crlb.py: a refusal now says it is a statement about THIS model form, not
+    about the record. A near-constant load starves the exponentiated IEC terms, while a
+    model parameterised on cooling-plant fraction and oil viscosity can be identifiable
+    on the same data. The old wording overclaimed.
+Documentation:
+  - ASSESSMENT.md: the prior-art gap is now a directed check of the nearest paper. The
+    "no one else is stating this" commissioning claim is qualified -- that article
+    proposes a designed acceptance-test profile; what remains unstated is the criterion.
+  - EVIDENCE.md: claims 99-105 added; claims 58 and 61 annotated, not rewritten.
+  - paper/main.tex: related work now engages the article instead of talking around it.
+Verification:
+  - Full suite: 248 passed in 60.65 s. 248 collected, none skipped.
+  - CORRECTION: CLAUDE.md claimed 275 passing tests. That figure does not reproduce and
+    contradicts this log's own 2026-08-28 entry of 245. Corrected to the measured 248
+    (245 + 3 added today). REPRODUCTION.md's stale "91 tests" also corrected.
+  - openpyxl installed into the local .venv; the private Excel scripts could not run.
+Next:
+  - Reconcile the 25.0 K published rated gradient against the 21.79 K identified here
+    for the same unit. Four candidate causes, none separable with what is on hand.
+  - Consider a settling-based stage-coverage gate: the 2 % thin-stage warning did not
+    fire on a stage occupying 2.6 % that never reaches quasi-steady.
+  - Consider a consistency check on the cooling-stage channel itself, which that
+    article's Section XII reports as unreliable and which is trusted blindly here.
+Open decisions:
+  - Reporting permission for the private field result is still not granted.
+  - Correspondence drafts remain for founder review. Nothing has been sent.

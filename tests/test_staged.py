@@ -31,6 +31,7 @@ from conftest import assert_reproduces
 from corefield.estimator import HotspotReferences, identify
 from corefield.iec60076_7 import InitialState, ThermalParams, simulate
 from corefield.staged import (
+    CLEAN_COOLER_PRECONDITION,
     SHARED_BY_DEFAULT,
     StagedThermalParams,
     identify_staged,
@@ -456,3 +457,66 @@ def test_fixing_every_parameter_is_refused(staged_day):
             "delta_theta_or_K": 40.0, "tau_o_min": 100.0,
             "delta_theta_hr_K": 20.0, "tau_w_min": 7.0,
         })
+
+
+# --------------------------------------------------------------------------
+# Declared preconditions and the scope of a refusal
+# --------------------------------------------------------------------------
+
+
+def test_the_clean_cooler_precondition_appears_on_every_report(staged_day):
+    """A fouled cooler is undetectable from the record, so it must be declared.
+
+    External fouling raises the oil-to-air thermal resistance. Identify on a
+    fouled cooler and the fouling is absorbed into `delta_theta_or` as though
+    it were a property of the transformer; identify clean and apply fouled and
+    the model under-predicts the hot spot, which is the unsafe direction. No
+    channel here can tell the difference, so the assumption is stated on every
+    report rather than checked.
+    """
+    report = _fit(staged_day).report()
+    assert "PRECONDITION:" in report
+    assert CLEAN_COOLER_PRECONDITION in report
+    # The unsafe direction is the part a reader must not miss.
+    assert "under-predict" in report
+
+
+def test_the_precondition_survives_a_held_parameter(staged_day):
+    """Holding a parameter must not displace the standing precondition."""
+    report = _fit(staged_day, fixed={"tau_w_min": 7.0}).report()
+    assert "HELD, NOT IDENTIFIED" in report
+    assert CLEAN_COOLER_PRECONDITION in report
+
+
+def test_a_railed_refusal_says_it_is_about_the_model_not_the_record():
+    """The refusal is a statement about this parameterisation, not the data.
+
+    The IEC two-exponential form is excited by load variation, so a near-flat
+    load starves it. A model parameterised on cooling-plant fraction and oil
+    viscosity draws excitation from stage switching and oil-temperature range
+    instead, and can be identifiable on the very same record. Reporting a
+    refusal here as "this record carries no thermal information" would be a
+    stronger claim than the estimator is entitled to make.
+    """
+    t = np.arange(0.0, 6 * 3600.0, 60.0)
+    stage = np.where(t < 3 * 3600.0, 1, 2)
+    # Constant load: nothing for the exponentiated terms to work against.
+    load = np.full(t.size, 0.80)
+    ambient = np.full(t.size, 20.0)
+    params = StagedThermalParams(per_stage={
+        1: ThermalParams(delta_theta_or_K=40.0, tau_o_min=150.0,
+                         delta_theta_hr_K=20.0, tau_w_min=7.0),
+        2: ThermalParams(delta_theta_or_K=28.0, tau_o_min=100.0,
+                         delta_theta_hr_K=20.0, tau_w_min=7.0),
+    })
+    traj = simulate_staged(t, load, ambient, stage, params)
+    refs = HotspotReferences(
+        time_s=t[::40][:8], temperature_C=traj.hotspot_C[::40][:8]
+    )
+    with pytest.raises(RuntimeError) as excinfo:
+        identify_staged(t, load, ambient, traj.top_oil_C, refs, stage,
+                        shared=(), loss="linear")
+    message = str(excinfo.value)
+    assert "THIS model form" in message
+    assert "not about the" in message
+    assert "carries no thermal information" in message

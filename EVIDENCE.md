@@ -124,10 +124,10 @@ model choices require review; permission for external reporting must be checked 
 
 | # | Claim | Label | Where verified |
 |---|---|---|---|
-| 58 | Recorded conditional hot-spot RMSE **1.54 K** over 5,029 later-period observations, τ_w held fixed and a constant-load window excluded | **(b), internal reanalysis** | `final_tr3.py`, private; not an independent prospective validation or worst-case bound |
+| 58 | Recorded conditional hot-spot RMSE **1.54 K** over 5,029 later-period observations, τ_w held fixed and a constant-load window excluded | **(b), internal reanalysis** | `final_tr3.py`, private; not an independent prospective validation or worst-case bound. **Superseded by claim 99:** this row used an assumed loss ratio R = 6 |
 | 59 | The earlier **7.91 K** score used a different fitting configuration | **(b), internal reanalysis** | `clean_validation.py`, private; not the same fit with/without masking, so a detector-only improvement is not established |
 | 60 | The rejected window holds load at exactly one value (0.01 pu) for 7.07 days while ambient swings 12 K, top-oil swings 11 K and the fan stage keeps switching | **(a)**, not reader-reproducible | private field record (`outage_check.py`), withheld |
-| 61 | A transformer genuinely at 0.01 pu would show a steady oil rise of Δθ_or/(1+R) ≈ 6 K, not the measured 22 K | **(b)** | Follows from the model with the identified Δθ_or and the assumed R = 6 |
+| 61 | A transformer genuinely at 0.01 pu would show a steady oil rise of Δθ_or/(1+R) ≈ 6 K, not the measured 22 K | **(b)** | Follows from the model with the identified Δθ_or and R; R was assumed 6 here and is sourced at 6.8 in claim 99, which does not change the conclusion |
 | 62 | The out-of-sample error is not seasonal: a within-segment split, same season, still shows it | **(a)**, not reader-reproducible | private field record (`transfer_test.py`), withheld |
 | 63 | The measured quasi-steady winding exponent is y ≈ 0.94, against Table 4's 2.0 for OD | **(a)**, not reader-reproducible | private field record (`gradient_check.py`), withheld. **Caveat:** 5 552 of 6 576 points sit in one load bin — direction solid, value not |
 | 64 | Loss ratio R is not load-bearing: out-of-sample RMSE moves 1.43 → 1.47 K across R = 5…10 | **(a)**, not reader-reproducible | private field record (`r_and_tr2.py`), withheld |
@@ -203,6 +203,25 @@ ONAN by this ONAF case.
 | 69 | `fixed=` holds a parameter, excludes it from the optimiser, and reports it as held rather than identified | **(a)** | `test_staged.py::test_a_fixed_parameter_is_held_exactly_and_declared` |
 | 70 | A channel pinned on one exact value passes every other ingest check | **(a)** | `test_ingest.py::test_a_stuck_load_channel_is_reported` |
 | 71 | `STUCK_CHANNEL_HOURS = 48` sits in an empty gap in the corpus: longest genuine constant-load run 34.8 h, longest defective run 169.8 h | **(b)** | Measured over three units, four segments. A unit genuinely held flat for three days would trip it wrongly |
+
+## The published fleet model, read 1 Sept 2026
+
+The article describing the source dataset was obtained from its author and read. It is
+copyrighted and is not redistributed; the local copy stays out of version control.
+Reference: L. Paulhiac and R. Desquiens, "Dynamic Thermal Model for Oil Directed Air Forced
+Power Transformers With Cooling Stage Representation," *IEEE Trans. Power Del.*, vol. 37,
+no. 5, pp. 4135–4144, Oct. 2022, doi: 10.1109/TPWRD.2022.3145003.
+
+| # | Claim | Label | Where verified |
+|---|---|---|---|
+| 99 | With the loss ratio sourced at **R = 6.8** instead of the assumed 6.0, the same fit gives out-of-sample hot-spot RMSE **1.55 K** and top-oil **1.34 K**, against 1.54 K and 1.31 K previously | **(b), internal reanalysis** | `final_tr3.py`, private. The number moved by 0.01 K; what changed is that R is no longer an assumption |
+| 100 | The loss ratio for the 360 MVA unit is **612 kW / 90 kW = 6.8** | **(a)** | The article's Table IV, p. 4140, which tabulates the three units of the dataset by name |
+| 101 | That article reports **no confidence intervals, no identifiability analysis, no information bound and no refusal criterion**; it fits by particle swarm optimisation or by hand | **(a)** | Direct reading, §VII and §VIII. Supports ASSESSMENT.md's prior-art gap as a directed check rather than a literature sweep |
+| 102 | Its stated applications include **cooling-efficiency monitoring and load-capability evaluation**, with a measured case in which a cleaned exchanger reduced the identified rated oil rise by about 20 K | **(a)** | Direct reading, §IX–X and Fig. 21. **This is prior art on two CoreField product claims; no novelty is asserted for either** |
+| 103 | Its model treats the winding time constant **τ_w as a required input, not a fitted parameter** | **(a)** | Direct reading: τ_w appears in its Table I (minimum data) and not in its Table III (fitted parameters). The `HELD, NOT IDENTIFIED` handling here matches the closest comparable practice |
+| 104 | The first cooling stage of the 360 MVA unit **falls outside that model's own assumptions**, and is handled there by an empirically fitted special case | **(a)** | Direct reading, p. 4142 and its Eq. (37). The stage-1 difficulty is a property of the unit, not of the method used here |
+| 105 | **Oil viscosity does not explain the ONAF oil-exponent drift.** Substituting the published viscosity correction for the load-dependent exponent gives n_v = 0.55–0.70 against a published range of 0.25–0.45, roughly doubles held-out error (RMSE 4.41 → 7.92 K), and produces an apparent exponent that **falls** with load where the measurement **rises** | **(b), falsified hypothesis** | `viscosity_exponent.py`, private. Two falsifiers were stated before the run; both fired. The buoyancy explanation is unaffected and `x1` stays empirical |
+
 
 ## Limitations section
 

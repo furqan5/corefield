@@ -165,10 +165,24 @@ Searched twice, independently, and came up empty both times:
    Nothing. The literature calibrates parameters by regression, neural networks and
    metaheuristics without ever reporting the statistical bound those methods work against. This
    is the strongest methodological card you hold, and it is now confirmed rather than assumed.
+
+   **Checked against the closest comparable work, 1 Sept 2026 (a).** Paulhiac and Desquiens'
+   cooling-stage ODAF model (IEEE Trans. Power Del. 37(5), 4135-4144, 2022) fits its parameters
+   by particle swarm optimisation or by hand and reports accuracy as post-hoc RMSE and cumulative
+   error distributions. It contains no confidence intervals, no identifiability analysis, no
+   information bound and no refusal criterion. That is a directed check of the single nearest
+   paper rather than another literature sweep, and it came up empty in the same way.
 2. **The observability law as a calibration-*scheduling* result** — amplitudes from quasi-steady,
    rates only from transients, and each sampled transient must anchor its own asymptote.
 3. **"Commission on at least two load events"** as a CRLB-derived commissioning specification
-   (12.3 % → 4.0 % floor on τ_w). This is an actionable spec no one else is stating.
+   (12.3 % → 4.0 % floor on τ_w).
+
+   **Qualified 1 Sept 2026 (a).** "No one else is stating this" was too strong. Paulhiac and
+   Desquiens close their 2022 paper by proposing a factory acceptance-test load profile that
+   exercises every cooling stage in turn, precisely to make fitting tractable. The idea of a
+   *designed* commissioning profile is therefore not new. What remains unstated elsewhere is the
+   **criterion**: theirs is a qualitative recommendation to cover the stages, while the spec here
+   derives the requirement from an information bound and puts a number on what the profile buys.
 4. **The structural-mismatch result quantified in the dangerous direction** — single-exponential
    models read **+5.76 K HIGH at 1.30 pu**, causing false derating exactly when capacity is worth
    most. Model comparison is common; framing it by *direction of error at overload* is not.

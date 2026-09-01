@@ -510,7 +510,10 @@ def load_slope_identifiability(
             f"load-slope is {100 * ratio:.0f} % of the supplied/example reference, with "
             f"rho(x0,x1) = {rho:.3f}. More informative load levels, lower noise, or more "
             f"independent observations can improve this full-rank bound. This result "
-            f"does not establish the direction or magnitude of extrapolation error."
+            f"does not establish the direction or magnitude of extrapolation error. "
+            f"It bounds the load-slope of THIS exponent parameterisation and says "
+            f"nothing about whether some other parameterisation of the same record "
+            f"is identifiable."
         )
     return LoadSlopeIdentifiability(std_x1, rho, hull, supported, note)
 

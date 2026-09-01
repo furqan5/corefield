@@ -138,6 +138,7 @@ Out-of-sample hot-spot RMSE:
 |---|---|---|
 | every sample scored | **7.91 K** | outside, too high |
 | stuck-channel window rejected, τ_w tabulated | **1.54 K** | outside, too low |
+| the same, with the loss ratio sourced at R = 6.8 rather than assumed 6.0 (1 Sept 2026) | **1.55 K** | outside, too low |
 
 **Both are misses and both are recorded as misses.** The band was narrowed to 2–4 K on 25 Aug
 precisely to make it falsifiable in both directions, and it was falsified downward. Scoring the
