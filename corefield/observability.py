@@ -76,7 +76,7 @@ geometry with stated assumptions, not a validated field result.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Callable, Sequence
+from typing import Callable, Mapping, Sequence
 
 import numpy as np
 from numpy.typing import NDArray
@@ -89,6 +89,8 @@ __all__ = [
     "probes_required_for",
     "HandoverCheck",
     "detect_winding_handover",
+    "AmbientProbeCheck",
+    "check_ambient_consistency",
 ]
 
 
@@ -422,3 +424,217 @@ def detect_winding_handover(
         f"No handover signature. Local exponents {np.round(exponents, 2).tolist()} "
         f"vary without a dip, consistent with one physical location throughout.",
     )
+
+
+# --------------------------------------------------------------------------
+# Is the ambient channel telling the truth?
+# --------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class AmbientProbeCheck:
+    """Whether the ambient channel is consistent with the oil it should explain.
+
+    Attributes
+    ----------
+    suspect : whether an offset or a stage-dependence exceeded tolerance
+    mean_offset_K : mean of (implied ambient - measured ambient) over the
+        quasi-steady samples [K]. Positive means the probe reads COLD relative
+        to the oil it is supposed to explain
+    per_stage_offset_K : {cooling stage: mean offset [K]}, empty when no stage
+        channel was supplied
+    stage_spread_K : largest difference between any two per-stage offsets [K],
+        or None when fewer than two stages carry quasi-steady samples
+    n_quasi_steady : how many samples the test actually used
+    note : what was found and what it does and does not mean
+    """
+
+    suspect: bool
+    mean_offset_K: float
+    per_stage_offset_K: Mapping[int, float]
+    stage_spread_K: float | None
+    n_quasi_steady: int
+    note: str
+
+
+def check_ambient_consistency(
+    time_s: NDArray[np.float64],
+    load_pu: NDArray[np.float64],
+    ambient_C: NDArray[np.float64],
+    top_oil_C: NDArray[np.float64],
+    params: "ThermalParams",
+    *,
+    constants: "CoolingConstants | None" = None,
+    cooling_stage: NDArray[np.int_] | None = None,
+    settle_factor: float = 3.0,
+    load_tol_pu: float = 0.02,
+    tolerance_K: float = 1.0,
+    min_samples: int = 30,
+) -> AmbientProbeCheck:
+    """Invert the steady-state oil model for ambient and compare with the probe.
+
+    At quasi-steady the model says top oil sits `steady_top_oil_rise(K)` above
+    ambient. Rearranged, the record implies an ambient temperature. Comparing
+    that against the measured ambient isolates the ambient channel, which every
+    other calculation in this package trusts without ever testing it.
+
+    The method is due to L. Paulhiac of EDF, given in correspondence.
+
+    Parameters
+    ----------
+    time_s : uniformly spaced sample times [s]
+    load_pu : per-unit load current at each sample [pu]
+    ambient_C : measured ambient temperature [degC]
+    top_oil_C : measured top-oil temperature [degC]
+    params : identified thermal parameters for this unit
+    constants : cooling-class constants; defaults to the ONAF medium/large set
+    cooling_stage : cooling-stage label per sample, or None. Supplying it is
+        what makes fan recirculation onto the probe detectable
+    settle_factor : how many oil time constants the load must have been steady
+        for a sample to count as quasi-steady. **(c)** Judgement. Three time
+        constants leaves about 5 % of a step uncompleted
+    load_tol_pu : the load must stay within this band over the settling window
+        for the oil to be treated as settled [pu]
+    tolerance_K : offsets larger than this in magnitude are flagged [K]
+    min_samples : below this many quasi-steady samples the test declines to
+        report rather than reporting noise
+
+    Returns
+    -------
+    AmbientProbeCheck
+
+    Notes
+    -----
+    **This is a flag, never a correction.** The offset absorbs EVERY
+    steady-state error in the model, not only the probe: a wrong loss ratio, a
+    wrong oil exponent, solar gain on the tank, or a rated oil rise identified
+    on a fouled cooler will all land in it. A non-zero offset says the record
+    and the model disagree at steady state; it does not say which is wrong.
+    Do not adjust the ambient channel with this number.
+
+    The stage-dependent part is the sharper signal, and it is the one that is
+    unavailable any other way. A genuine model error is a property of the
+    physics and does not know which fans are running, so it lands roughly
+    equally on every cooling stage. An ambient probe sitting in the cooler
+    exhaust does know: its reading shifts when the fans start. A large
+    `stage_spread_K` against a small `mean_offset_K` points at the probe
+    rather than at the model.
+
+    Direction matters for safety. A probe reading HIGH -- in the exhaust, in
+    the sun, against a warm wall -- makes the identified rated oil rise too
+    SMALL, which makes the loading envelope too generous. That is the unsafe
+    direction, and it presents here as a negative `mean_offset_K`.
+    """
+    from .iec60076_7 import ONAF_MEDIUM_LARGE_POWER, steady_top_oil_rise
+
+    if constants is None:
+        constants = ONAF_MEDIUM_LARGE_POWER
+
+    t = np.asarray(time_s, dtype=np.float64).ravel()
+    K = np.asarray(load_pu, dtype=np.float64).ravel()
+    amb = np.asarray(ambient_C, dtype=np.float64).ravel()
+    oil = np.asarray(top_oil_C, dtype=np.float64).ravel()
+    for name, arr in (("load_pu", K), ("ambient_C", amb), ("top_oil_C", oil)):
+        if arr.shape != t.shape:
+            raise ValueError(f"{name} shape {arr.shape} != time_s shape {t.shape}")
+    if t.size < 2:
+        raise ValueError("time_s must have at least two samples")
+    dt = float(np.diff(t).mean())
+    if dt <= 0.0 or not np.allclose(np.diff(t), dt, rtol=1e-6, atol=1e-9):
+        raise ValueError("time_s must be uniformly spaced and increasing")
+    if cooling_stage is not None:
+        stage = np.asarray(cooling_stage).ravel()
+        if stage.shape != t.shape:
+            raise ValueError(
+                f"cooling_stage shape {stage.shape} != time_s shape {t.shape}"
+            )
+        stage = stage.astype(np.int_)
+    else:
+        stage = None
+
+    # A sample is quasi-steady when the load has been flat for long enough that
+    # the oil has effectively caught up. That is the physical condition, so it
+    # is tested directly rather than through a slope threshold on the oil.
+    window = int(round(settle_factor * params.tau_o_min * 60.0 / dt))
+    if window < 1:
+        window = 1
+    finite = np.isfinite(K) & np.isfinite(amb) & np.isfinite(oil)
+    settled = np.zeros(t.size, dtype=bool)
+    for i in range(window, t.size):
+        seg = K[i - window: i + 1]
+        if not np.all(finite[i - window: i + 1]):
+            continue
+        if float(np.nanmax(seg) - np.nanmin(seg)) <= load_tol_pu:
+            settled[i] = True
+
+    n = int(settled.sum())
+    if n < min_samples:
+        return AmbientProbeCheck(
+            False, float("nan"), {}, None, n,
+            f"Only {n} quasi-steady samples against a minimum of {min_samples}. "
+            f"The load never holds within {load_tol_pu:.2f} pu for "
+            f"{settle_factor:g} oil time constants ({settle_factor * params.tau_o_min:.0f} "
+            f"min), so the steady-state inversion has nowhere to stand. NOT CHECKED "
+            f"-- which is not the same as the ambient channel being sound.",
+        )
+
+    implied = oil[settled] - steady_top_oil_rise(K[settled], params, constants)
+    offset = implied - amb[settled]
+    mean_offset = float(np.mean(offset))
+
+    per_stage: dict[int, float] = {}
+    spread: float | None = None
+    if stage is not None:
+        for s in sorted(set(int(v) for v in stage[settled])):
+            m = stage[settled] == s
+            if int(m.sum()) >= min_samples:
+                per_stage[s] = float(np.mean(offset[m]))
+        if len(per_stage) >= 2:
+            values = list(per_stage.values())
+            spread = float(max(values) - min(values))
+
+    offset_suspect = abs(mean_offset) > tolerance_K
+    spread_suspect = spread is not None and spread > tolerance_K
+    suspect = offset_suspect or spread_suspect
+
+    direction = (
+        "reads WARM relative to the oil, which biases the identified rated oil "
+        "rise LOW and the loading envelope HIGH -- the unsafe direction"
+        if mean_offset < 0 else
+        "reads COOL relative to the oil, which biases the identified rated oil "
+        "rise HIGH and the loading envelope LOW -- the conservative direction"
+    )
+
+    if not suspect:
+        note = (
+            f"Consistent. Over {n} quasi-steady samples the implied ambient sits "
+            f"{mean_offset:+.2f} K from the measured one, inside the {tolerance_K:.2f} K "
+            f"tolerance"
+            + (f", and the spread across cooling stages is {spread:.2f} K"
+               if spread is not None else "")
+            + ". This does not validate the probe; it says the record and the model "
+              "do not disagree at steady state by more than the tolerance."
+        )
+    elif spread_suspect and abs(mean_offset) <= tolerance_K:
+        note = (
+            f"SUSPECT, and it points at the probe. Over {n} quasi-steady samples the "
+            f"mean offset is only {mean_offset:+.2f} K, but it differs by {spread:.2f} K "
+            f"between cooling stages ({', '.join(f'{s}: {v:+.2f} K' for s, v in sorted(per_stage.items()))}). "
+            f"A model error does not know which fans are running; an ambient probe in "
+            f"the cooler exhaust does. Check the probe siting before trusting a fit "
+            f"from this record."
+        )
+    else:
+        note = (
+            f"SUSPECT. Over {n} quasi-steady samples the implied ambient sits "
+            f"{mean_offset:+.2f} K from the measured one, beyond the {tolerance_K:.2f} K "
+            f"tolerance: the probe {direction}"
+            + (f". Spread across cooling stages is {spread:.2f} K"
+               if spread is not None else "")
+            + ". This offset absorbs every steady-state model error as well as the "
+              "probe -- a wrong loss ratio, a wrong exponent, solar gain, or a rated "
+              "oil rise identified on a fouled cooler. It is a flag for "
+              "investigation, not a correction to apply."
+        )
+
+    return AmbientProbeCheck(suspect, mean_offset, per_stage, spread, n, note)

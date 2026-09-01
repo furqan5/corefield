@@ -106,3 +106,49 @@ Next:
 Open decisions:
   - Reporting permission for the private field result is still not granted.
   - Correspondence drafts remain for founder review. Nothing has been sent.
+
+================================================================================
+2026-09-01 (later)  Ambient-probe consistency check, and the paper finalised
+================================================================================
+New capability:
+  - observability.check_ambient_consistency. At quasi-steady the model fixes the
+    top-oil rise above ambient, so the record implies an ambient temperature;
+    differencing that against the measured channel isolates the ambient probe,
+    which every other calculation here trusted without ever testing it.
+    A persistent offset is a siting bias. A component that changes with cooling
+    stage is cooler airflow reaching the probe, and nothing else available
+    separates it, because a model error does not know which fans are running.
+  - The direction matters: a probe reading WARM biases the identified rated oil
+    rise LOW and the loading envelope HIGH, which is the unsafe direction. The
+    check names it.
+  - Implemented as a flag, never a correction. The offset absorbs every
+    steady-state model error as well as the probe. It declines to report when
+    the load never settles for three oil time constants.
+  - Method due to L. Paulhiac of EDF, given in correspondence, and credited in
+    the manuscript acknowledgement. THAT WORDING IS NOT YET APPROVED BY HIM.
+Paper:
+  - Section VI gains the screening paragraph for the above, attached to the
+    corruption battery's own result that omitted ambient is the largest single
+    defect and acts in the unsafe direction.
+  - Section V now records the viscosity falsification as two-directional support
+    for keeping ON and OD separate.
+  - Section I engages the 2022 article instead of talking around it.
+  - Acknowledgement extended to ambient-measurement validation.
+  - Dates moved to September 2026. Rebuilt: 5 pages plus a 2-page supplement,
+    no undefined references, no overfull boxes.
+Defect found and fixed:
+  - scripts/reproduce_study.py was MISSING from the working tree while Section VII
+    instructed reviewers to run it. Restored from the retained author-review
+    package in paper/ and verified: it regenerates study_results.json with all
+    137 fields identical to the committed copy.
+  - The packaged zip's SOURCE_REVISION named a commit on a branch that was
+    deleted and never pushed. To be rebuilt against a pushed commit.
+Correction:
+  - CLAUDE.md quoted Model A's worst-case peak error as +6.18 K. The repository
+    reproduces +6.17 K and EVIDENCE.md already documented the difference.
+    Corrected to the reproduced value.
+Verification:
+  - Full suite: 254 passed in 62.32 s. 254 collected, none skipped.
+Open:
+  - Luc's approval of the new acknowledgement wording.
+  - The ODAF units' instrumentation must not be described; documentation was declined.

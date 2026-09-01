@@ -202,3 +202,116 @@ def test_unsorted_input_is_handled_and_bad_input_refused():
     with pytest.raises(ValueError, match="duplicate values"):
         detect_winding_handover(np.array([1.0, 1.0, 1.2, 1.4]),
                                 np.array([1.0, 2.0, 3.0, 4.0]))
+
+
+# --------------------------------------------------------------------------
+# Is the ambient channel telling the truth?
+#
+# Method due to L. Paulhiac of EDF, given in correspondence: invert the
+# steady-state oil model for ambient and compare against the probe. Every
+# other calculation in this package trusts the ambient channel without
+# testing it, and a mis-sited probe fails in the unsafe direction.
+# --------------------------------------------------------------------------
+
+from corefield.iec60076_7 import (  # noqa: E402
+    ONAF_MEDIUM_LARGE_POWER,
+    ThermalParams,
+    simulate,
+)
+from corefield.observability import (  # noqa: E402
+    check_ambient_consistency,
+)
+
+_AMB_PARAMS = ThermalParams(
+    delta_theta_or_K=38.0, tau_o_min=150.0,
+    delta_theta_hr_K=20.0, tau_w_min=7.0,
+)
+
+
+def _settled_record(n_days=6.0, dt_s=120.0, ambient_C=20.0, stage_pattern=None):
+    """A record that holds load flat long enough for the oil to settle.
+
+    Two long plateaus at different loads, each many oil time constants, so
+    the quasi-steady mask has plenty to work with.
+    """
+    t = np.arange(0.0, n_days * 86400.0, dt_s)
+    load = np.where((t % 86400.0) < 43200.0, 0.60, 0.85)
+    amb = np.full(t.size, float(ambient_C)) if np.isscalar(ambient_C) else ambient_C
+    traj = simulate(t, load, amb, _AMB_PARAMS, ONAF_MEDIUM_LARGE_POWER)
+    stage = None if stage_pattern is None else stage_pattern(t, load)
+    return t, load, amb, traj.top_oil_C, stage
+
+
+def test_a_truthful_ambient_channel_is_not_flagged():
+    t, load, amb, oil, _ = _settled_record()
+    check = check_ambient_consistency(t, load, amb, oil, _AMB_PARAMS)
+    assert not check.suspect
+    assert check.n_quasi_steady > 30
+    assert abs(check.mean_offset_K) < 0.5
+    # The wording must not overclaim: passing is not validation of the probe.
+    assert "does not validate the probe" in check.note
+
+
+def test_a_probe_reading_warm_is_flagged_and_named_as_the_unsafe_direction():
+    """A probe in the sun or the cooler exhaust reads high.
+
+    The identified rated oil rise then comes out too small and the loading
+    envelope too generous, so this is the direction that matters.
+    """
+    t, load, amb, oil, _ = _settled_record()
+    check = check_ambient_consistency(t, load, amb + 3.0, oil, _AMB_PARAMS)
+    assert check.suspect
+    # Implied minus measured: a probe reading 3 K warm shows as -3 K.
+    assert check.mean_offset_K == pytest.approx(-3.0, abs=0.3)
+    assert "unsafe direction" in check.note
+    assert "not a correction" in check.note
+
+
+def test_a_probe_reading_cool_is_flagged_as_conservative():
+    t, load, amb, oil, _ = _settled_record()
+    check = check_ambient_consistency(t, load, amb - 3.0, oil, _AMB_PARAMS)
+    assert check.suspect
+    assert check.mean_offset_K == pytest.approx(3.0, abs=0.3)
+    assert "conservative direction" in check.note
+
+
+def test_a_stage_dependent_offset_points_at_the_probe_not_the_model():
+    """Fan recirculation onto the probe is the signal nothing else can see.
+
+    A genuine model error is a property of the physics and lands equally on
+    every cooling stage. A probe in the exhaust shifts when the fans start.
+    Constructed so the MEAN offset is near zero and only the split is large,
+    which is precisely the case a mean-only test would miss.
+    """
+    t, load, amb, oil, _ = _settled_record()
+    stage = np.where(load > 0.7, 2, 1)
+    # +2 K only while the fans run, -2 K otherwise: mean cancels, split does not.
+    corrupted = amb + np.where(stage == 2, 2.0, -2.0)
+    check = check_ambient_consistency(
+        t, load, corrupted, oil, _AMB_PARAMS, cooling_stage=stage
+    )
+    assert check.suspect
+    assert abs(check.mean_offset_K) < 1.0          # a mean-only test would pass this
+    assert check.stage_spread_K == pytest.approx(4.0, abs=0.5)
+    assert "points at the probe" in check.note
+    assert set(check.per_stage_offset_K) == {1, 2}
+
+
+def test_a_record_that_never_settles_declines_to_report():
+    """No quasi-steady samples means the inversion has nowhere to stand."""
+    t = np.arange(0.0, 3 * 86400.0, 120.0)
+    # Load never holds still for three oil time constants.
+    load = 0.7 + 0.2 * np.sin(2 * np.pi * t / 3600.0)
+    amb = np.full(t.size, 20.0)
+    traj = simulate(t, load, amb, _AMB_PARAMS, ONAF_MEDIUM_LARGE_POWER)
+    check = check_ambient_consistency(t, load, amb, traj.top_oil_C, _AMB_PARAMS)
+    assert not check.suspect
+    assert check.n_quasi_steady < 30
+    assert "NOT CHECKED" in check.note
+    assert "not the same as the ambient channel being sound" in check.note
+
+
+def test_mismatched_shapes_are_refused():
+    t, load, amb, oil, _ = _settled_record()
+    with pytest.raises(ValueError, match="ambient_C shape"):
+        check_ambient_consistency(t, load, amb[:-1], oil, _AMB_PARAMS)
