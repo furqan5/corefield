@@ -31,9 +31,13 @@ pp. 111–112. The guides compared in that paper are its cited historical editio
 4. **(b, reanalysis)** Interval power-law exponents computed from a few temperatures are
    not direct observations of the load-slope parameter in CoreField's loss-ratio model.
    The physical cause and cross-class magnitude are unresolved.
-5. **(b, reanalysis)** The 1.54 K archived-data score excluded a constant-load window and
+5. **(b, reanalysis)** The 1.55 K archived-data score excluded a constant-load window and
    held the winding time constant fixed. The earlier 7.91 K score used a different fit.
-   Do not attribute the entire difference to a detector or call the suspected fault confirmed.
+   Do not attribute the entire difference to a detector. **(a, correspondence 1 Sept 2026)**
+   The data supplier has since said he believes that window was a monitoring issue and has
+   authorised excluding it, which makes the exclusion supplier-authorised rather than an
+   analyst's own rule. He hedged the cause as "I think", so it is still not a verified
+   instrument diagnosis and must not be described as a confirmed fault.
 6. **(a, implementation)** The production estimator fits four thermal parameters.
    Caller-supplied exponent slopes and standalone information diagnostics are additional
    capabilities, not automatic six-parameter estimation or an end-to-end refusal system.

@@ -152,3 +152,39 @@ Verification:
 Open:
   - Luc's approval of the new acknowledgement wording.
   - The ODAF units' instrumentation must not be described; documentation was declined.
+
+================================================================================
+2026-09-01 (later)  Both EDF permissions answered; the exclusion is now authorised
+================================================================================
+Granted, in writing:
+  - Acknowledgement: both contacts have now consented to be named. The data
+    supplier replied "you can do the same for me as for Luc". Luc's consent
+    covers the earlier general wording; the sentence crediting him for the
+    ambient-measurement method is still awaiting his specific approval.
+  - Exclusion of the constant-load window: the supplier replied that he believes
+    it was a monitoring issue and that the period can be excluded.
+What that changes:
+  - The 16.8 % exclusion behind the 1.55 K out-of-sample score was an analyst's
+    rejection rule, stated before the score but applied to someone else's data.
+    It is now authorised by the data owner, who characterised the window the same
+    way without being told what was suspected. That removes the strongest
+    available objection to the score.
+What it explicitly does NOT change:
+  - He wrote "I think", not that he had traced it. The root cause remains an
+    unverified belief and must never be written up as a confirmed instrument
+    fault. Recorded as (a) for what he said, (b) for the cause.
+  - It is NOT permission to report the derived quantitative result. That is a
+    separate permission, has not been asked for, and still gates any external
+    use of the 1.55 K. Acknowledgement consent is not reporting permission, and
+    CLAUDE.md and the DVP pack now say so in terms.
+  - No other condition moves: one unit, below nameplate, one parameter held,
+    two of three cooling stages identified.
+Also corrected:
+  - The DVP pack and the plain-language explainer still quoted 275 automated
+    tests. Both corrected to the measured 254.
+  - The DVP pack's condition for external use required "reporting permission and
+    the measurement documentation". The documentation was declined, so that
+    condition could never have been met as written; it now states the two
+    separately and records the refusal.
+Verification:
+  - Full suite: 254 passed. No code changed in this entry.
