@@ -242,3 +242,35 @@ Next:
   - Ask SINTEF where the fibre probes sit relative to the top-oil sensor. That
     one answer decides whether the 11 K offset is a fact or a hypothesis, and
     they asked what was missing from the dataset.
+
+================================================================================
+2026-09-02 (later)  The ambient check on real data: no verdict, and why
+================================================================================
+Withdrawn:
+  - The earlier "+1.00 K, not suspect" on the SINTEF record. delta_theta_or had
+    been fitted on the same record the check was then applied to. Least squares
+    zeroes the mean residual on its own fitting subset, so the number was an
+    artefact of subset selection rather than a statement about the probe.
+    EVIDENCE.md claim 119 is marked withdrawn rather than edited away.
+What a proper run shows:
+  - Break the circularity with a time split and the VERDICT FLIPS. Fit on the
+    first half, check the second: +1.39 K, suspect. Reverse it: +0.48 K, not
+    suspect. The halves disagree on the rated oil rise by 2.20 K, which is the
+    honest measure of how weakly a 0.048-0.429 pu hull constrains a rated value.
+  - The offset passes only at the loss ratio we assumed. Sweeping R from 4 to 10
+    moves it +3.64 -> -3.12 K, changing sign. R is not supplied with the dataset.
+    On this record the mean offset reads out our assumption, not the probe.
+  - The residual is not flat. Day-night swing 2.99 K (day -1.50, night +1.48)
+    against a mean of +0.01 K, with the sign a sun-exposed probe would give --
+    but confounded with oil thermal lag, because the quasi-steady test
+    constrains LOAD stability and not AMBIENT stability. Not attributable.
+    Monthly residual swings 2.5 K, mechanism not established, and explicitly NOT
+    the oil-viscosity effect, which would act in the opposite direction.
+About the check itself:
+  - An ONAN unit has no cooling stages, so the stage-split diagnostic -- the
+    sharper of the check's two axes -- is unavailable, leaving only the mean.
+    That is the statistic most contaminated by model error, as the R sweep shows.
+  - (c) Proposed, not built: a diurnal-component axis for stageless units. It
+    needs the oil lag handled first or it will report thermal inertia as probe
+    error.
+No code changed in this entry. Suite unchanged at 259.
