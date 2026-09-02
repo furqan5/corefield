@@ -1,0 +1,282 @@
+{
+ "label": "(b) engineering analysis, simplified 1-D axial model, not validated",
+ "bound": "joint 2-parameter CRLB over (location, delta_theta_hr); scalar reported for contrast",
+ "true_location_fraction": 0.9,
+ "thresholds_percent_of_height": {
+  "excellent": 2.0,
+  "actionable": 10.0,
+  "useless": 25.0
+ },
+ "configurations": [
+  {
+   "n_probes": 0,
+   "positions": [],
+   "noise_K": 0.1,
+   "joint_location_std_percent_of_height": 11.32369695298982,
+   "scalar_location_std_percent_of_height": 8.007062903560549,
+   "verdict": "weak"
+  },
+  {
+   "n_probes": 0,
+   "positions": [],
+   "noise_K": 0.25,
+   "joint_location_std_percent_of_height": 28.309242382474547,
+   "scalar_location_std_percent_of_height": 20.017657258901366,
+   "verdict": "useless"
+  },
+  {
+   "n_probes": 0,
+   "positions": [],
+   "noise_K": 0.5,
+   "joint_location_std_percent_of_height": 56.618484764949095,
+   "scalar_location_std_percent_of_height": 40.03531451780273,
+   "verdict": "useless"
+  },
+  {
+   "n_probes": 0,
+   "positions": [],
+   "noise_K": 1.0,
+   "joint_location_std_percent_of_height": 113.23696952989819,
+   "scalar_location_std_percent_of_height": 80.07062903560546,
+   "verdict": "useless"
+  },
+  {
+   "n_probes": 0,
+   "positions": [],
+   "noise_K": 2.0,
+   "joint_location_std_percent_of_height": 226.47393905979638,
+   "scalar_location_std_percent_of_height": 160.14125807121093,
+   "verdict": "useless"
+  },
+  {
+   "n_probes": 1,
+   "positions": [
+    1.0
+   ],
+   "noise_K": 0.1,
+   "joint_location_std_percent_of_height": 0.11857641104713489,
+   "scalar_location_std_percent_of_height": 0.06355972814247511,
+   "verdict": "excellent"
+  },
+  {
+   "n_probes": 1,
+   "positions": [
+    1.0
+   ],
+   "noise_K": 0.25,
+   "joint_location_std_percent_of_height": 0.29644102761783714,
+   "scalar_location_std_percent_of_height": 0.15889932035618776,
+   "verdict": "excellent"
+  },
+  {
+   "n_probes": 1,
+   "positions": [
+    1.0
+   ],
+   "noise_K": 0.5,
+   "joint_location_std_percent_of_height": 0.5928820552356743,
+   "scalar_location_std_percent_of_height": 0.3177986407123755,
+   "verdict": "excellent"
+  },
+  {
+   "n_probes": 1,
+   "positions": [
+    1.0
+   ],
+   "noise_K": 1.0,
+   "joint_location_std_percent_of_height": 1.1857641104713486,
+   "scalar_location_std_percent_of_height": 0.635597281424751,
+   "verdict": "excellent"
+  },
+  {
+   "n_probes": 1,
+   "positions": [
+    1.0
+   ],
+   "noise_K": 2.0,
+   "joint_location_std_percent_of_height": 2.371528220942697,
+   "scalar_location_std_percent_of_height": 1.271194562849502,
+   "verdict": "actionable"
+  },
+  {
+   "n_probes": 2,
+   "positions": [
+    0.775,
+    1.0
+   ],
+   "noise_K": 0.1,
+   "joint_location_std_percent_of_height": 0.053329780164663367,
+   "scalar_location_std_percent_of_height": 0.05218445653301396,
+   "verdict": "excellent"
+  },
+  {
+   "n_probes": 2,
+   "positions": [
+    0.775,
+    1.0
+   ],
+   "noise_K": 0.25,
+   "joint_location_std_percent_of_height": 0.1333244504116584,
+   "scalar_location_std_percent_of_height": 0.1304611413325349,
+   "verdict": "excellent"
+  },
+  {
+   "n_probes": 2,
+   "positions": [
+    0.775,
+    1.0
+   ],
+   "noise_K": 0.5,
+   "joint_location_std_percent_of_height": 0.2666489008233168,
+   "scalar_location_std_percent_of_height": 0.2609222826650698,
+   "verdict": "excellent"
+  },
+  {
+   "n_probes": 2,
+   "positions": [
+    0.775,
+    1.0
+   ],
+   "noise_K": 1.0,
+   "joint_location_std_percent_of_height": 0.5332978016466337,
+   "scalar_location_std_percent_of_height": 0.5218445653301396,
+   "verdict": "excellent"
+  },
+  {
+   "n_probes": 2,
+   "positions": [
+    0.775,
+    1.0
+   ],
+   "noise_K": 2.0,
+   "joint_location_std_percent_of_height": 1.0665956032932673,
+   "scalar_location_std_percent_of_height": 1.0436891306602791,
+   "verdict": "excellent"
+  },
+  {
+   "n_probes": 3,
+   "positions": [
+    0.775,
+    0.8,
+    1.0
+   ],
+   "noise_K": 0.1,
+   "joint_location_std_percent_of_height": 0.04607010360892083,
+   "scalar_location_std_percent_of_height": 0.04575127497789697,
+   "verdict": "excellent"
+  },
+  {
+   "n_probes": 3,
+   "positions": [
+    0.775,
+    0.8,
+    1.0
+   ],
+   "noise_K": 0.25,
+   "joint_location_std_percent_of_height": 0.11517525902230207,
+   "scalar_location_std_percent_of_height": 0.11437818744474242,
+   "verdict": "excellent"
+  },
+  {
+   "n_probes": 3,
+   "positions": [
+    0.775,
+    0.8,
+    1.0
+   ],
+   "noise_K": 0.5,
+   "joint_location_std_percent_of_height": 0.23035051804460413,
+   "scalar_location_std_percent_of_height": 0.22875637488948483,
+   "verdict": "excellent"
+  },
+  {
+   "n_probes": 3,
+   "positions": [
+    0.775,
+    0.8,
+    1.0
+   ],
+   "noise_K": 1.0,
+   "joint_location_std_percent_of_height": 0.46070103608920826,
+   "scalar_location_std_percent_of_height": 0.45751274977896966,
+   "verdict": "excellent"
+  },
+  {
+   "n_probes": 3,
+   "positions": [
+    0.775,
+    0.8,
+    1.0
+   ],
+   "noise_K": 2.0,
+   "joint_location_std_percent_of_height": 0.9214020721784165,
+   "scalar_location_std_percent_of_height": 0.9150254995579393,
+   "verdict": "excellent"
+  },
+  {
+   "n_probes": 4,
+   "positions": [
+    0.775,
+    0.8,
+    0.975,
+    1.0
+   ],
+   "noise_K": 0.1,
+   "joint_location_std_percent_of_height": 0.03924683482047105,
+   "scalar_location_std_percent_of_height": 0.03848880683911504,
+   "verdict": "excellent"
+  },
+  {
+   "n_probes": 4,
+   "positions": [
+    0.775,
+    0.8,
+    0.975,
+    1.0
+   ],
+   "noise_K": 0.25,
+   "joint_location_std_percent_of_height": 0.0981170870511776,
+   "scalar_location_std_percent_of_height": 0.09622201709778758,
+   "verdict": "excellent"
+  },
+  {
+   "n_probes": 4,
+   "positions": [
+    0.775,
+    0.8,
+    0.975,
+    1.0
+   ],
+   "noise_K": 0.5,
+   "joint_location_std_percent_of_height": 0.1962341741023552,
+   "scalar_location_std_percent_of_height": 0.19244403419557515,
+   "verdict": "excellent"
+  },
+  {
+   "n_probes": 4,
+   "positions": [
+    0.775,
+    0.8,
+    0.975,
+    1.0
+   ],
+   "noise_K": 1.0,
+   "joint_location_std_percent_of_height": 0.3924683482047104,
+   "scalar_location_std_percent_of_height": 0.3848880683911503,
+   "verdict": "excellent"
+  },
+  {
+   "n_probes": 4,
+   "positions": [
+    0.775,
+    0.8,
+    0.975,
+    1.0
+   ],
+   "noise_K": 2.0,
+   "joint_location_std_percent_of_height": 0.7849366964094208,
+   "scalar_location_std_percent_of_height": 0.7697761367823006,
+   "verdict": "excellent"
+  }
+ ]
+}
