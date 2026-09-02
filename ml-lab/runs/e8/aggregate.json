@@ -1,0 +1,849 @@
+{
+ "label": "(b) simplified 1-D axial model plus an assumed linear wall-coupling model",
+ "bound": "joint CRLB over (location, bottom_oil, top_oil); coupling variant adds it",
+ "ambient_C": 25.0,
+ "raw_signal_K_per_10pct_shift": 0.875284109387735,
+ "raw_signal_peak_height": 0.88,
+ "rows": [
+  {
+   "n_sensors": 1,
+   "coupling": 1.0,
+   "noise_K": 0.1,
+   "location_std_percent_of_height": Infinity,
+   "verdict": "useless"
+  },
+  {
+   "n_sensors": 1,
+   "coupling": 1.0,
+   "noise_K": 0.25,
+   "location_std_percent_of_height": Infinity,
+   "verdict": "useless"
+  },
+  {
+   "n_sensors": 1,
+   "coupling": 1.0,
+   "noise_K": 0.5,
+   "location_std_percent_of_height": Infinity,
+   "verdict": "useless"
+  },
+  {
+   "n_sensors": 1,
+   "coupling": 1.0,
+   "noise_K": 1.0,
+   "location_std_percent_of_height": Infinity,
+   "verdict": "useless"
+  },
+  {
+   "n_sensors": 1,
+   "coupling": 1.0,
+   "noise_K": 2.0,
+   "location_std_percent_of_height": Infinity,
+   "verdict": "useless"
+  },
+  {
+   "n_sensors": 2,
+   "coupling": 1.0,
+   "noise_K": 0.1,
+   "location_std_percent_of_height": Infinity,
+   "verdict": "useless"
+  },
+  {
+   "n_sensors": 2,
+   "coupling": 1.0,
+   "noise_K": 0.25,
+   "location_std_percent_of_height": Infinity,
+   "verdict": "useless"
+  },
+  {
+   "n_sensors": 2,
+   "coupling": 1.0,
+   "noise_K": 0.5,
+   "location_std_percent_of_height": Infinity,
+   "verdict": "useless"
+  },
+  {
+   "n_sensors": 2,
+   "coupling": 1.0,
+   "noise_K": 1.0,
+   "location_std_percent_of_height": Infinity,
+   "verdict": "useless"
+  },
+  {
+   "n_sensors": 2,
+   "coupling": 1.0,
+   "noise_K": 2.0,
+   "location_std_percent_of_height": Infinity,
+   "verdict": "useless"
+  },
+  {
+   "n_sensors": 4,
+   "coupling": 1.0,
+   "noise_K": 0.1,
+   "location_std_percent_of_height": 2.063707813940718,
+   "verdict": "actionable"
+  },
+  {
+   "n_sensors": 4,
+   "coupling": 1.0,
+   "noise_K": 0.25,
+   "location_std_percent_of_height": 5.159269534851795,
+   "verdict": "actionable"
+  },
+  {
+   "n_sensors": 4,
+   "coupling": 1.0,
+   "noise_K": 0.5,
+   "location_std_percent_of_height": 10.31853906970359,
+   "verdict": "weak"
+  },
+  {
+   "n_sensors": 4,
+   "coupling": 1.0,
+   "noise_K": 1.0,
+   "location_std_percent_of_height": 20.63707813940718,
+   "verdict": "weak"
+  },
+  {
+   "n_sensors": 4,
+   "coupling": 1.0,
+   "noise_K": 2.0,
+   "location_std_percent_of_height": 41.27415627881436,
+   "verdict": "useless"
+  },
+  {
+   "n_sensors": 8,
+   "coupling": 1.0,
+   "noise_K": 0.1,
+   "location_std_percent_of_height": 0.9984095557835582,
+   "verdict": "excellent"
+  },
+  {
+   "n_sensors": 8,
+   "coupling": 1.0,
+   "noise_K": 0.25,
+   "location_std_percent_of_height": 2.496023889458895,
+   "verdict": "actionable"
+  },
+  {
+   "n_sensors": 8,
+   "coupling": 1.0,
+   "noise_K": 0.5,
+   "location_std_percent_of_height": 4.99204777891779,
+   "verdict": "actionable"
+  },
+  {
+   "n_sensors": 8,
+   "coupling": 1.0,
+   "noise_K": 1.0,
+   "location_std_percent_of_height": 9.98409555783558,
+   "verdict": "actionable"
+  },
+  {
+   "n_sensors": 8,
+   "coupling": 1.0,
+   "noise_K": 2.0,
+   "location_std_percent_of_height": 19.96819111567116,
+   "verdict": "weak"
+  },
+  {
+   "n_sensors": 16,
+   "coupling": 1.0,
+   "noise_K": 0.1,
+   "location_std_percent_of_height": 0.7101023817765052,
+   "verdict": "excellent"
+  },
+  {
+   "n_sensors": 16,
+   "coupling": 1.0,
+   "noise_K": 0.25,
+   "location_std_percent_of_height": 1.7752559544412632,
+   "verdict": "excellent"
+  },
+  {
+   "n_sensors": 16,
+   "coupling": 1.0,
+   "noise_K": 0.5,
+   "location_std_percent_of_height": 3.5505119088825263,
+   "verdict": "actionable"
+  },
+  {
+   "n_sensors": 16,
+   "coupling": 1.0,
+   "noise_K": 1.0,
+   "location_std_percent_of_height": 7.101023817765053,
+   "verdict": "actionable"
+  },
+  {
+   "n_sensors": 16,
+   "coupling": 1.0,
+   "noise_K": 2.0,
+   "location_std_percent_of_height": 14.202047635530105,
+   "verdict": "weak"
+  },
+  {
+   "n_sensors": 32,
+   "coupling": 1.0,
+   "noise_K": 0.1,
+   "location_std_percent_of_height": 0.5078517224702854,
+   "verdict": "excellent"
+  },
+  {
+   "n_sensors": 32,
+   "coupling": 1.0,
+   "noise_K": 0.25,
+   "location_std_percent_of_height": 1.269629306175713,
+   "verdict": "excellent"
+  },
+  {
+   "n_sensors": 32,
+   "coupling": 1.0,
+   "noise_K": 0.5,
+   "location_std_percent_of_height": 2.539258612351426,
+   "verdict": "actionable"
+  },
+  {
+   "n_sensors": 32,
+   "coupling": 1.0,
+   "noise_K": 1.0,
+   "location_std_percent_of_height": 5.078517224702852,
+   "verdict": "actionable"
+  },
+  {
+   "n_sensors": 32,
+   "coupling": 1.0,
+   "noise_K": 2.0,
+   "location_std_percent_of_height": 10.157034449405703,
+   "verdict": "weak"
+  },
+  {
+   "n_sensors": 1,
+   "coupling": 0.7,
+   "noise_K": 0.1,
+   "location_std_percent_of_height": Infinity,
+   "verdict": "useless"
+  },
+  {
+   "n_sensors": 1,
+   "coupling": 0.7,
+   "noise_K": 0.25,
+   "location_std_percent_of_height": Infinity,
+   "verdict": "useless"
+  },
+  {
+   "n_sensors": 1,
+   "coupling": 0.7,
+   "noise_K": 0.5,
+   "location_std_percent_of_height": Infinity,
+   "verdict": "useless"
+  },
+  {
+   "n_sensors": 1,
+   "coupling": 0.7,
+   "noise_K": 1.0,
+   "location_std_percent_of_height": Infinity,
+   "verdict": "useless"
+  },
+  {
+   "n_sensors": 1,
+   "coupling": 0.7,
+   "noise_K": 2.0,
+   "location_std_percent_of_height": Infinity,
+   "verdict": "useless"
+  },
+  {
+   "n_sensors": 2,
+   "coupling": 0.7,
+   "noise_K": 0.1,
+   "location_std_percent_of_height": Infinity,
+   "verdict": "useless"
+  },
+  {
+   "n_sensors": 2,
+   "coupling": 0.7,
+   "noise_K": 0.25,
+   "location_std_percent_of_height": Infinity,
+   "verdict": "useless"
+  },
+  {
+   "n_sensors": 2,
+   "coupling": 0.7,
+   "noise_K": 0.5,
+   "location_std_percent_of_height": Infinity,
+   "verdict": "useless"
+  },
+  {
+   "n_sensors": 2,
+   "coupling": 0.7,
+   "noise_K": 1.0,
+   "location_std_percent_of_height": Infinity,
+   "verdict": "useless"
+  },
+  {
+   "n_sensors": 2,
+   "coupling": 0.7,
+   "noise_K": 2.0,
+   "location_std_percent_of_height": Infinity,
+   "verdict": "useless"
+  },
+  {
+   "n_sensors": 4,
+   "coupling": 0.7,
+   "noise_K": 0.1,
+   "location_std_percent_of_height": 2.948154019915311,
+   "verdict": "actionable"
+  },
+  {
+   "n_sensors": 4,
+   "coupling": 0.7,
+   "noise_K": 0.25,
+   "location_std_percent_of_height": 7.370385049788278,
+   "verdict": "actionable"
+  },
+  {
+   "n_sensors": 4,
+   "coupling": 0.7,
+   "noise_K": 0.5,
+   "location_std_percent_of_height": 14.740770099576556,
+   "verdict": "weak"
+  },
+  {
+   "n_sensors": 4,
+   "coupling": 0.7,
+   "noise_K": 1.0,
+   "location_std_percent_of_height": 29.481540199153113,
+   "verdict": "useless"
+  },
+  {
+   "n_sensors": 4,
+   "coupling": 0.7,
+   "noise_K": 2.0,
+   "location_std_percent_of_height": 58.963080398306225,
+   "verdict": "useless"
+  },
+  {
+   "n_sensors": 8,
+   "coupling": 0.7,
+   "noise_K": 0.1,
+   "location_std_percent_of_height": 1.4262993654050833,
+   "verdict": "excellent"
+  },
+  {
+   "n_sensors": 8,
+   "coupling": 0.7,
+   "noise_K": 0.25,
+   "location_std_percent_of_height": 3.5657484135127073,
+   "verdict": "actionable"
+  },
+  {
+   "n_sensors": 8,
+   "coupling": 0.7,
+   "noise_K": 0.5,
+   "location_std_percent_of_height": 7.131496827025415,
+   "verdict": "actionable"
+  },
+  {
+   "n_sensors": 8,
+   "coupling": 0.7,
+   "noise_K": 1.0,
+   "location_std_percent_of_height": 14.26299365405083,
+   "verdict": "weak"
+  },
+  {
+   "n_sensors": 8,
+   "coupling": 0.7,
+   "noise_K": 2.0,
+   "location_std_percent_of_height": 28.52598730810166,
+   "verdict": "useless"
+  },
+  {
+   "n_sensors": 16,
+   "coupling": 0.7,
+   "noise_K": 0.1,
+   "location_std_percent_of_height": 1.0144319739664365,
+   "verdict": "excellent"
+  },
+  {
+   "n_sensors": 16,
+   "coupling": 0.7,
+   "noise_K": 0.25,
+   "location_std_percent_of_height": 2.5360799349160907,
+   "verdict": "actionable"
+  },
+  {
+   "n_sensors": 16,
+   "coupling": 0.7,
+   "noise_K": 0.5,
+   "location_std_percent_of_height": 5.0721598698321815,
+   "verdict": "actionable"
+  },
+  {
+   "n_sensors": 16,
+   "coupling": 0.7,
+   "noise_K": 1.0,
+   "location_std_percent_of_height": 10.144319739664363,
+   "verdict": "weak"
+  },
+  {
+   "n_sensors": 16,
+   "coupling": 0.7,
+   "noise_K": 2.0,
+   "location_std_percent_of_height": 20.288639479328726,
+   "verdict": "weak"
+  },
+  {
+   "n_sensors": 32,
+   "coupling": 0.7,
+   "noise_K": 0.1,
+   "location_std_percent_of_height": 0.7255024606718367,
+   "verdict": "excellent"
+  },
+  {
+   "n_sensors": 32,
+   "coupling": 0.7,
+   "noise_K": 0.25,
+   "location_std_percent_of_height": 1.8137561516795908,
+   "verdict": "excellent"
+  },
+  {
+   "n_sensors": 32,
+   "coupling": 0.7,
+   "noise_K": 0.5,
+   "location_std_percent_of_height": 3.6275123033591816,
+   "verdict": "actionable"
+  },
+  {
+   "n_sensors": 32,
+   "coupling": 0.7,
+   "noise_K": 1.0,
+   "location_std_percent_of_height": 7.255024606718363,
+   "verdict": "actionable"
+  },
+  {
+   "n_sensors": 32,
+   "coupling": 0.7,
+   "noise_K": 2.0,
+   "location_std_percent_of_height": 14.510049213436726,
+   "verdict": "weak"
+  },
+  {
+   "n_sensors": 1,
+   "coupling": 0.5,
+   "noise_K": 0.1,
+   "location_std_percent_of_height": Infinity,
+   "verdict": "useless"
+  },
+  {
+   "n_sensors": 1,
+   "coupling": 0.5,
+   "noise_K": 0.25,
+   "location_std_percent_of_height": Infinity,
+   "verdict": "useless"
+  },
+  {
+   "n_sensors": 1,
+   "coupling": 0.5,
+   "noise_K": 0.5,
+   "location_std_percent_of_height": Infinity,
+   "verdict": "useless"
+  },
+  {
+   "n_sensors": 1,
+   "coupling": 0.5,
+   "noise_K": 1.0,
+   "location_std_percent_of_height": Infinity,
+   "verdict": "useless"
+  },
+  {
+   "n_sensors": 1,
+   "coupling": 0.5,
+   "noise_K": 2.0,
+   "location_std_percent_of_height": Infinity,
+   "verdict": "useless"
+  },
+  {
+   "n_sensors": 2,
+   "coupling": 0.5,
+   "noise_K": 0.1,
+   "location_std_percent_of_height": Infinity,
+   "verdict": "useless"
+  },
+  {
+   "n_sensors": 2,
+   "coupling": 0.5,
+   "noise_K": 0.25,
+   "location_std_percent_of_height": Infinity,
+   "verdict": "useless"
+  },
+  {
+   "n_sensors": 2,
+   "coupling": 0.5,
+   "noise_K": 0.5,
+   "location_std_percent_of_height": Infinity,
+   "verdict": "useless"
+  },
+  {
+   "n_sensors": 2,
+   "coupling": 0.5,
+   "noise_K": 1.0,
+   "location_std_percent_of_height": Infinity,
+   "verdict": "useless"
+  },
+  {
+   "n_sensors": 2,
+   "coupling": 0.5,
+   "noise_K": 2.0,
+   "location_std_percent_of_height": Infinity,
+   "verdict": "useless"
+  },
+  {
+   "n_sensors": 4,
+   "coupling": 0.5,
+   "noise_K": 0.1,
+   "location_std_percent_of_height": 4.127415627881436,
+   "verdict": "actionable"
+  },
+  {
+   "n_sensors": 4,
+   "coupling": 0.5,
+   "noise_K": 0.25,
+   "location_std_percent_of_height": 10.31853906970359,
+   "verdict": "weak"
+  },
+  {
+   "n_sensors": 4,
+   "coupling": 0.5,
+   "noise_K": 0.5,
+   "location_std_percent_of_height": 20.63707813940718,
+   "verdict": "weak"
+  },
+  {
+   "n_sensors": 4,
+   "coupling": 0.5,
+   "noise_K": 1.0,
+   "location_std_percent_of_height": 41.27415627881436,
+   "verdict": "useless"
+  },
+  {
+   "n_sensors": 4,
+   "coupling": 0.5,
+   "noise_K": 2.0,
+   "location_std_percent_of_height": 82.54831255762872,
+   "verdict": "useless"
+  },
+  {
+   "n_sensors": 8,
+   "coupling": 0.5,
+   "noise_K": 0.1,
+   "location_std_percent_of_height": 1.9968191115671163,
+   "verdict": "excellent"
+  },
+  {
+   "n_sensors": 8,
+   "coupling": 0.5,
+   "noise_K": 0.25,
+   "location_std_percent_of_height": 4.99204777891779,
+   "verdict": "actionable"
+  },
+  {
+   "n_sensors": 8,
+   "coupling": 0.5,
+   "noise_K": 0.5,
+   "location_std_percent_of_height": 9.98409555783558,
+   "verdict": "actionable"
+  },
+  {
+   "n_sensors": 8,
+   "coupling": 0.5,
+   "noise_K": 1.0,
+   "location_std_percent_of_height": 19.96819111567116,
+   "verdict": "weak"
+  },
+  {
+   "n_sensors": 8,
+   "coupling": 0.5,
+   "noise_K": 2.0,
+   "location_std_percent_of_height": 39.93638223134232,
+   "verdict": "useless"
+  },
+  {
+   "n_sensors": 16,
+   "coupling": 0.5,
+   "noise_K": 0.1,
+   "location_std_percent_of_height": 1.4202047635530104,
+   "verdict": "excellent"
+  },
+  {
+   "n_sensors": 16,
+   "coupling": 0.5,
+   "noise_K": 0.25,
+   "location_std_percent_of_height": 3.5505119088825263,
+   "verdict": "actionable"
+  },
+  {
+   "n_sensors": 16,
+   "coupling": 0.5,
+   "noise_K": 0.5,
+   "location_std_percent_of_height": 7.101023817765053,
+   "verdict": "actionable"
+  },
+  {
+   "n_sensors": 16,
+   "coupling": 0.5,
+   "noise_K": 1.0,
+   "location_std_percent_of_height": 14.202047635530105,
+   "verdict": "weak"
+  },
+  {
+   "n_sensors": 16,
+   "coupling": 0.5,
+   "noise_K": 2.0,
+   "location_std_percent_of_height": 28.40409527106021,
+   "verdict": "useless"
+  },
+  {
+   "n_sensors": 32,
+   "coupling": 0.5,
+   "noise_K": 0.1,
+   "location_std_percent_of_height": 1.0157034449405709,
+   "verdict": "excellent"
+  },
+  {
+   "n_sensors": 32,
+   "coupling": 0.5,
+   "noise_K": 0.25,
+   "location_std_percent_of_height": 2.539258612351426,
+   "verdict": "actionable"
+  },
+  {
+   "n_sensors": 32,
+   "coupling": 0.5,
+   "noise_K": 0.5,
+   "location_std_percent_of_height": 5.078517224702852,
+   "verdict": "actionable"
+  },
+  {
+   "n_sensors": 32,
+   "coupling": 0.5,
+   "noise_K": 1.0,
+   "location_std_percent_of_height": 10.157034449405703,
+   "verdict": "weak"
+  },
+  {
+   "n_sensors": 32,
+   "coupling": 0.5,
+   "noise_K": 2.0,
+   "location_std_percent_of_height": 20.314068898811406,
+   "verdict": "weak"
+  },
+  {
+   "n_sensors": 1,
+   "coupling": 0.3,
+   "noise_K": 0.1,
+   "location_std_percent_of_height": Infinity,
+   "verdict": "useless"
+  },
+  {
+   "n_sensors": 1,
+   "coupling": 0.3,
+   "noise_K": 0.25,
+   "location_std_percent_of_height": Infinity,
+   "verdict": "useless"
+  },
+  {
+   "n_sensors": 1,
+   "coupling": 0.3,
+   "noise_K": 0.5,
+   "location_std_percent_of_height": Infinity,
+   "verdict": "useless"
+  },
+  {
+   "n_sensors": 1,
+   "coupling": 0.3,
+   "noise_K": 1.0,
+   "location_std_percent_of_height": Infinity,
+   "verdict": "useless"
+  },
+  {
+   "n_sensors": 1,
+   "coupling": 0.3,
+   "noise_K": 2.0,
+   "location_std_percent_of_height": Infinity,
+   "verdict": "useless"
+  },
+  {
+   "n_sensors": 2,
+   "coupling": 0.3,
+   "noise_K": 0.1,
+   "location_std_percent_of_height": Infinity,
+   "verdict": "useless"
+  },
+  {
+   "n_sensors": 2,
+   "coupling": 0.3,
+   "noise_K": 0.25,
+   "location_std_percent_of_height": Infinity,
+   "verdict": "useless"
+  },
+  {
+   "n_sensors": 2,
+   "coupling": 0.3,
+   "noise_K": 0.5,
+   "location_std_percent_of_height": Infinity,
+   "verdict": "useless"
+  },
+  {
+   "n_sensors": 2,
+   "coupling": 0.3,
+   "noise_K": 1.0,
+   "location_std_percent_of_height": Infinity,
+   "verdict": "useless"
+  },
+  {
+   "n_sensors": 2,
+   "coupling": 0.3,
+   "noise_K": 2.0,
+   "location_std_percent_of_height": Infinity,
+   "verdict": "useless"
+  },
+  {
+   "n_sensors": 4,
+   "coupling": 0.3,
+   "noise_K": 0.1,
+   "location_std_percent_of_height": 6.879026046469061,
+   "verdict": "actionable"
+  },
+  {
+   "n_sensors": 4,
+   "coupling": 0.3,
+   "noise_K": 0.25,
+   "location_std_percent_of_height": 17.197565116172655,
+   "verdict": "weak"
+  },
+  {
+   "n_sensors": 4,
+   "coupling": 0.3,
+   "noise_K": 0.5,
+   "location_std_percent_of_height": 34.39513023234531,
+   "verdict": "useless"
+  },
+  {
+   "n_sensors": 4,
+   "coupling": 0.3,
+   "noise_K": 1.0,
+   "location_std_percent_of_height": 68.79026046469062,
+   "verdict": "useless"
+  },
+  {
+   "n_sensors": 4,
+   "coupling": 0.3,
+   "noise_K": 2.0,
+   "location_std_percent_of_height": 137.58052092938124,
+   "verdict": "useless"
+  },
+  {
+   "n_sensors": 8,
+   "coupling": 0.3,
+   "noise_K": 0.1,
+   "location_std_percent_of_height": 3.3280318526118617,
+   "verdict": "actionable"
+  },
+  {
+   "n_sensors": 8,
+   "coupling": 0.3,
+   "noise_K": 0.25,
+   "location_std_percent_of_height": 8.320079631529651,
+   "verdict": "actionable"
+  },
+  {
+   "n_sensors": 8,
+   "coupling": 0.3,
+   "noise_K": 0.5,
+   "location_std_percent_of_height": 16.640159263059303,
+   "verdict": "weak"
+  },
+  {
+   "n_sensors": 8,
+   "coupling": 0.3,
+   "noise_K": 1.0,
+   "location_std_percent_of_height": 33.280318526118606,
+   "verdict": "useless"
+  },
+  {
+   "n_sensors": 8,
+   "coupling": 0.3,
+   "noise_K": 2.0,
+   "location_std_percent_of_height": 66.56063705223721,
+   "verdict": "useless"
+  },
+  {
+   "n_sensors": 16,
+   "coupling": 0.3,
+   "noise_K": 0.1,
+   "location_std_percent_of_height": 2.367007939255019,
+   "verdict": "actionable"
+  },
+  {
+   "n_sensors": 16,
+   "coupling": 0.3,
+   "noise_K": 0.25,
+   "location_std_percent_of_height": 5.9175198481375455,
+   "verdict": "actionable"
+  },
+  {
+   "n_sensors": 16,
+   "coupling": 0.3,
+   "noise_K": 0.5,
+   "location_std_percent_of_height": 11.835039696275091,
+   "verdict": "weak"
+  },
+  {
+   "n_sensors": 16,
+   "coupling": 0.3,
+   "noise_K": 1.0,
+   "location_std_percent_of_height": 23.670079392550182,
+   "verdict": "weak"
+  },
+  {
+   "n_sensors": 16,
+   "coupling": 0.3,
+   "noise_K": 2.0,
+   "location_std_percent_of_height": 47.340158785100364,
+   "verdict": "useless"
+  },
+  {
+   "n_sensors": 32,
+   "coupling": 0.3,
+   "noise_K": 0.1,
+   "location_std_percent_of_height": 1.692839074900951,
+   "verdict": "excellent"
+  },
+  {
+   "n_sensors": 32,
+   "coupling": 0.3,
+   "noise_K": 0.25,
+   "location_std_percent_of_height": 4.232097687252376,
+   "verdict": "actionable"
+  },
+  {
+   "n_sensors": 32,
+   "coupling": 0.3,
+   "noise_K": 0.5,
+   "location_std_percent_of_height": 8.464195374504753,
+   "verdict": "actionable"
+  },
+  {
+   "n_sensors": 32,
+   "coupling": 0.3,
+   "noise_K": 1.0,
+   "location_std_percent_of_height": 16.928390749009505,
+   "verdict": "weak"
+  },
+  {
+   "n_sensors": 32,
+   "coupling": 0.3,
+   "noise_K": 2.0,
+   "location_std_percent_of_height": 33.85678149801901,
+   "verdict": "useless"
+  }
+ ]
+}
