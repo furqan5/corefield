@@ -274,3 +274,28 @@ About the check itself:
     needs the oil lag handled first or it will report thermal inertia as probe
     error.
 No code changed in this entry. Suite unchanged at 259.
+
+================================================================================
+2026-09-02 (later)  Acknowledgement approved by both; package rebuilt
+================================================================================
+Permissions:
+  - The acknowledgement sentence is now approved by both named individuals:
+    the data supplier on 1 Sept, and the model's author on 2 Sept ("Ok for me")
+    after the exact sentence was quoted to him verbatim.
+  - The sentence is marked APPROVED in paper/main.tex with the dates and the
+    quoted responses. Editing it voids both approvals and both must be re-asked.
+  - Still NOT granted: permission to report the derived quantitative result.
+    That is separate, has never been asked for, and still gates external use.
+Submission package:
+  - Rebuilt at commit f156af0, verified pushed before packaging. 47 entries,
+    archive integrity OK, 0 checksum mismatches.
+  - Ships PolyForm Noncommercial 1.0.0 as the code licence, with the historical
+    Apache-2.0 text included, and SOURCE_REVISION now states the licence change,
+    that noncommercial use covers review and reproduction, and that the earlier
+    Apache grant is not revoked.
+  - The previous Apache-licensed package is retained as a .bak rather than
+    overwritten.
+Remaining manuscript gates, both human:
+  - Check equations and constants against a licensed IEC copy.
+  - Independent scientific, authorship and AI-disclosure review.
+No code changed. Suite unchanged at 259.
