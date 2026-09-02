@@ -1,3 +1,18 @@
+# Copyright 2026 CoreField (Furqan Shakeel)
+#
+# Licensed under the PolyForm Noncommercial License 1.0.0.
+# You may obtain a copy of the License at
+#
+#     https://polyformproject.org/licenses/noncommercial/1.0.0
+#
+# Use is permitted for noncommercial purposes only, as that term is defined by
+# the License. Commercial use requires a separate licence from the copyright
+# holder. This is a source-available licence, not an open-source one.
+#
+# Versions of this file released before 2026-09-02 were published under the
+# Apache License 2.0 and remain available under those terms; that grant is not
+# and cannot be revoked.
+
 """Reproduce the synthetic study only; no operational data are loaded.
 
 Run from the repository root with ``python -m scripts.reproduce_study --out DIR``.
