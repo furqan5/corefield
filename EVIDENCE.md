@@ -229,6 +229,26 @@ no. 5, pp. 4135–4144, Oct. 2022, doi: 10.1109/TPWRD.2022.3145003.
 | 109 | `scripts/reproduce_study.py` regenerates `paper/generated/study_results.json` with **all 137 fields identical** to the committed copy | **(a)** | Direct comparison, 1 Sept 2026. The script had gone missing from the working tree while the manuscript instructed reviewers to run it |
 
 
+## Second unit: a public CC-BY record, 2 Sept 2026
+
+Baerug, Madshaven & Espedal (SINTEF Energi AS), "Supporting data for thermomechanical modelling of
+clamping force in power transformer in operation," Zenodo, 2025,
+doi: 10.5281/zenodo.17223516, CC-BY-4.0. 40 MVA ONAN, southern Norway, hourly, calendar 2024.
+**Redistributable and citable, unlike the ODAF records.** Companion paper forthcoming; citing it is
+a licence obligation.
+
+| # | Claim | Label | Where verified |
+|---|---|---|---|
+| 112 | The record's load hull is **0.048-0.429 pu** against a 175.0 A rated HV current; it never approaches nameplate | **(a)** | `private/sintef/characterise.py`. Reaching 1.60 pu from here is a 3.7x extrapolation, so this record cannot support any near- or above-nameplate claim |
+| 113 | Sampling is **hourly**, giving 0.17 samples per ON winding time constant against Table 4's 10 min | **(a)** | Six times worse than the 10-minute ODAF record. tau_w is not identifiable here and must be held |
+| 114 | The governing winding hot spot reads **below** top oil in **74.4 %** of 6,242 quasi-steady samples | **(a)** | The IEC form cannot produce a negative gradient at any positive parameter value, so the record is not describable by the model as it stands |
+| 115 | That negative gradient is orderly, not noise: it rises monotonically with load and crosses zero near 0.22 pu | **(a)** | `gradient_and_fit.py`, seven load bands |
+| 116 | A constant datum offset explains it: `Delta_hr*K^y - C` gives C = 11.3 K, y = 0.98 and residual **0.99 K**, against **4.64 K** for the IEC form with no offset, whose exponent rails | **(b)** | `offset_hypothesis.py`. Reading (c): the fibre probes and the top-oil probe do not share a reference point. Not confirmed with the data's authors |
+| 117 | With `y` fixed at the tabulated value, as the package does, the rated gradient is driven to its **lower bound** and the existing railed-parameter check refuses the fit | **(a)** | Correct behaviour, and it reports the symptom without the cause -- which is why claim 118 exists |
+| 118 | `observability.check_gradient_datum` reports the negative fraction, fits both forms, and names the offset without ever subtracting it | **(a)** | `test_observability.py`, five tests; recovers an injected 11 K offset to within 0.5 K |
+| 119 | `check_ambient_consistency` on this record returns **not suspect** at a mean offset of **+1.00 K** over 548 quasi-steady samples | **(b)**, marginal | First real-data run of that check. The offset sits exactly on the tolerance, and inherits an extrapolated Delta_or and an assumed R = 6.0. A marginal pass, not a clean one |
+| 120 | The suppliers' own top-oil model scores RMSE 1.30 K, bias -0.01 K against the measurement over 8,592 rows | **(a)** | `Barug2025_calculated.csv`. Not stated whether in-sample, so a reference point rather than a benchmark beaten or lost |
+
 ## Limitations section
 
 Every claim in the README's Limitations section is **(a)** — each is a statement that something

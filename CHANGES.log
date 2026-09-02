@@ -188,3 +188,57 @@ Also corrected:
     separately and records the refusal.
 Verification:
   - Full suite: 254 passed. No code changed in this entry.
+
+================================================================================
+2026-09-02  A second unit, public and CC-BY, and the failure mode it exposed
+================================================================================
+Data:
+  - SINTEF Energi AS DynaLoad deposit obtained after the archive request was
+    declined: Baerug, Madshaven & Espedal, Zenodo 10.5281/zenodo.17223516,
+    CC-BY-4.0. 40 MVA ONAN, southern Norway, hourly, calendar 2024, 8,592 rows,
+    97.8 % coverage. Byte counts verified against the record metadata.
+    Redistributable and citable, which the ODAF records are not. The companion
+    paper is forthcoming and citing it is a licence obligation, not a courtesy.
+What it does NOT support, established before any fitting:
+  - Load hull 0.048-0.429 pu. Never approaches nameplate; 1.60 pu is a 3.7x
+    extrapolation away. No near- or above-nameplate claim can rest on it.
+  - Hourly sampling gives 0.17 samples per ON winding time constant. Six times
+    worse than the 10-minute ODAF record. tau_w is not identifiable, full stop.
+  - It does not close the replication gap and must not be pooled with the
+    360 MVA ODAF result: different size class, different cooling class.
+The finding that made it worth the day:
+  - The governing winding hot spot reads BELOW top oil in 74.4 % of quasi-steady
+    samples. The IEC form cannot produce a negative gradient at any positive
+    parameter value, so the record is not describable by the model as it stands.
+  - It is orderly rather than noisy: the gradient rises monotonically with load
+    and crosses zero near 0.22 pu. Fitting `Delta_hr*K^y - C` gives C = 11.3 K,
+    y = 0.98, residual 0.99 K, against 4.64 K for the IEC form with no offset,
+    whose exponent rails against its bound.
+  - (c) Reading: the fibre probes and the top-oil probe do not share a reference
+    point. This has NOT been confirmed with the data's authors and is a
+    hypothesis, not a fact.
+  - With y fixed as the package fixes it, the rated gradient is driven to its
+    lower bound and the existing railed-parameter check refuses. Correct
+    behaviour -- but it reports the symptom and not the cause.
+Code:
+  - observability.check_gradient_datum. Reports the negative fraction; when it
+    exceeds tolerance, fits both forms and names the offset, the rated gradient
+    it implies, and the residual improvement. A flag and a diagnosis, never a
+    correction: the offset absorbs probe placement, calibration error and a hot
+    spot that is not where the probe is, and subtracting it would invent a
+    measurement. Five tests, including recovery of an injected 11 K offset.
+  - Two defects the tests caught rather than hid. The first draft counted the
+    opening sample as quasi-steady, because numpy's `prepend` fabricates a zero
+    step for a sample that has no predecessor; removed. And a new test silently
+    shadowed an earlier one of the same name, deleting it from the suite;
+    renamed, restoring it.
+  - First real-data run of check_ambient_consistency: not suspect at +1.00 K
+    over 548 quasi-steady samples. Recorded as a MARGINAL pass -- the offset
+    sits exactly on the tolerance and inherits an extrapolated Delta_or and an
+    assumed R = 6.0.
+Verification:
+  - Full suite: 259 passed, none skipped, ~95 s.
+Next:
+  - Ask SINTEF where the fibre probes sit relative to the top-oil sensor. That
+    one answer decides whether the 11 K offset is a fact or a hypothesis, and
+    they asked what was missing from the dataset.

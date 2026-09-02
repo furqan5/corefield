@@ -91,6 +91,8 @@ __all__ = [
     "detect_winding_handover",
     "AmbientProbeCheck",
     "check_ambient_consistency",
+    "GradientDatumCheck",
+    "check_gradient_datum",
 ]
 
 
@@ -638,3 +640,181 @@ def check_ambient_consistency(
         )
 
     return AmbientProbeCheck(suspect, mean_offset, per_stage, spread, n, note)
+
+
+# --------------------------------------------------------------------------
+# Do the winding and oil channels share a datum?
+# --------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class GradientDatumCheck:
+    """Whether the hot-spot and top-oil channels are referenced to each other.
+
+    Attributes
+    ----------
+    suspect : whether a material fraction of the record has the winding
+        reading COLDER than the top oil
+    negative_fraction : fraction of quasi-steady samples with hot spot below
+        top oil [-]
+    n_quasi_steady : samples the test used
+    offset_K : fitted datum offset C [K], or None when not estimated. Positive
+        means the winding channel reads low relative to the oil channel
+    rated_gradient_K : fitted rated gradient once the offset is allowed [K]
+    exponent : fitted winding exponent once the offset is allowed [-]
+    rmse_with_offset_K, rmse_without_offset_K : residual of the two forms [K]
+    note : what was found and what it means for identification
+    """
+
+    suspect: bool
+    negative_fraction: float
+    n_quasi_steady: int
+    offset_K: float | None
+    rated_gradient_K: float | None
+    exponent: float | None
+    rmse_with_offset_K: float | None
+    rmse_without_offset_K: float | None
+    note: str
+
+
+def check_gradient_datum(
+    load_pu: NDArray[np.float64],
+    top_oil_C: NDArray[np.float64],
+    hotspot_C: NDArray[np.float64],
+    *,
+    negative_fraction_threshold: float = 0.05,
+    load_step_tol_pu: float = 0.01,
+    min_samples: int = 50,
+) -> GradientDatumCheck:
+    """Flag a record whose winding channel reads colder than its oil channel.
+
+    The IEC form sets hot spot = top oil + `delta_theta_hr * K**y` with both
+    parameters positive, so the model **cannot produce a negative gradient at
+    any parameter value**. A record that shows one is not describable by the
+    model, and fitting it anyway drives `delta_theta_hr` to a bound or absorbs
+    a constant datum error into a rated parameter.
+
+    The usual cause is not a fault. Fibre probes sit at a fixed point in the
+    winding while the top-oil sensor sits at the top of the tank, and those two
+    points do not share a reference temperature. The difference behaves as a
+    roughly constant offset C, which the model has no term for:
+
+        measured gradient = delta_theta_hr * K**y  -  C
+
+    Parameters
+    ----------
+    load_pu : per-unit load current at each sample [pu], strictly positive
+    top_oil_C : measured top-oil temperature [degC]
+    hotspot_C : measured winding hot-spot temperature [degC]
+    negative_fraction_threshold : flag when more than this fraction of
+        quasi-steady samples show a negative gradient [-]. **(c)** Judgement.
+        A few negative samples are noise around a small gradient at light load;
+        5 % is not.
+    load_step_tol_pu : a sample counts as quasi-steady when the load moved less
+        than this from the previous sample [pu]. The gradient relation is a
+        steady-state statement
+    min_samples : below this many quasi-steady samples the offset is not
+        estimated, because a three-parameter fit on less is not informative
+
+    Returns
+    -------
+    GradientDatumCheck
+
+    Notes
+    -----
+    **This is a flag and a diagnosis, never a correction.** The offset is not
+    subtracted from anyone's data. A fitted C absorbs every constant difference
+    between the two channels, including genuine probe placement, calibration
+    error and a hot spot that simply is not where the probe is. Reporting it
+    tells an engineer where to look; applying it would invent a measurement.
+
+    The rated gradient reported here is an EXTRAPOLATION whenever the record's
+    load hull stops well below 1.00 pu, and must be labelled as one.
+    """
+    K = np.asarray(load_pu, dtype=np.float64).ravel()
+    oil = np.asarray(top_oil_C, dtype=np.float64).ravel()
+    hot = np.asarray(hotspot_C, dtype=np.float64).ravel()
+    if not (K.shape == oil.shape == hot.shape):
+        raise ValueError(
+            f"load_pu {K.shape}, top_oil_C {oil.shape} and hotspot_C {hot.shape} "
+            f"must have the same shape"
+        )
+    if K.size < 2:
+        raise ValueError("need at least two samples")
+
+    gradient = hot - oil
+    # The first sample has no predecessor, so it has no evidence of being
+    # settled. Prepending its own value would fabricate a zero step and count
+    # it as quasi-steady on an assumption the record does not support.
+    step = np.full(K.size, np.inf)
+    step[1:] = np.abs(np.diff(K))
+    usable = (
+        np.isfinite(gradient) & np.isfinite(K) & (K > 0.0) & (step < load_step_tol_pu)
+    )
+    n = int(usable.sum())
+    if n == 0:
+        return GradientDatumCheck(
+            False, float("nan"), 0, None, None, None, None, None,
+            "No quasi-steady samples: the load never holds still long enough for the "
+            "steady-state gradient relation to apply. NOT CHECKED.",
+        )
+
+    Kq, gq = K[usable], gradient[usable]
+    negative_fraction = float(np.mean(gq < 0.0))
+
+    if negative_fraction <= negative_fraction_threshold:
+        return GradientDatumCheck(
+            False, negative_fraction, n, None, None, None, None, None,
+            f"Consistent. {100 * negative_fraction:.1f} % of {n} quasi-steady samples "
+            f"show the winding below the top oil, within the "
+            f"{100 * negative_fraction_threshold:.0f} % tolerance. The two channels "
+            f"appear to share a datum.",
+        )
+
+    offset = rated = exponent = rmse_with = rmse_without = None
+    if n >= min_samples:
+        from scipy.optimize import least_squares
+
+        with_offset = least_squares(
+            lambda p: p[0] * Kq ** p[1] - p[2] - gq,
+            [max(float(np.ptp(gq)), 1.0), 1.6, 1.0],
+            bounds=([1e-3, 0.2, -50.0], [500.0, 3.0, 100.0]),
+        )
+        rated, exponent, offset = (float(v) for v in with_offset.x)
+        rmse_with = float(np.sqrt(np.mean(with_offset.fun**2)))
+
+        without = least_squares(
+            lambda p: p[0] * Kq ** p[1] - gq,
+            [max(float(np.ptp(gq)), 1.0), 1.6],
+            bounds=([1e-3, 0.2], [500.0, 3.0]),
+        )
+        rmse_without = float(np.sqrt(np.mean(without.fun**2)))
+
+    head = (
+        f"SUSPECT. {100 * negative_fraction:.1f} % of {n} quasi-steady samples have the "
+        f"winding hot spot BELOW the top oil. The IEC form cannot produce a negative "
+        f"gradient at any positive parameter value, so this record is not describable "
+        f"by the model as it stands."
+    )
+    if offset is None:
+        return GradientDatumCheck(
+            True, negative_fraction, n, None, None, None, None, None,
+            head + f" Too few quasi-steady samples ({n} < {min_samples}) to estimate the "
+                   f"offset.",
+        )
+
+    improved = rmse_without - rmse_with
+    return GradientDatumCheck(
+        True, negative_fraction, n, offset, rated, exponent, rmse_with, rmse_without,
+        head
+        + f" Allowing a constant datum offset C fits the same data far better: "
+          f"residual {rmse_without:.2f} -> {rmse_with:.2f} K for C = {offset:.2f} K, "
+          f"rated gradient {rated:.1f} K, exponent {exponent:.2f}. An offset of that "
+          f"size is the signature of a winding probe and a top-oil probe that do not "
+          f"share a reference point, which is a placement property rather than a "
+          f"fault. Identify the gradient branch from this record and the offset is "
+          f"absorbed into the rated parameter instead. The offset is reported, never "
+          f"subtracted."
+        + (f" Note the improvement is only {improved:.2f} K, so the offset reading is "
+           f"weakly supported here." if improved < 0.5 else "")
+    )

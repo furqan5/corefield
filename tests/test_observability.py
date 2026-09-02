@@ -315,3 +315,76 @@ def test_mismatched_shapes_are_refused():
     t, load, amb, oil, _ = _settled_record()
     with pytest.raises(ValueError, match="ambient_C shape"):
         check_ambient_consistency(t, load, amb[:-1], oil, _AMB_PARAMS)
+
+
+# --------------------------------------------------------------------------
+# Do the winding and oil channels share a datum?
+#
+# Found on a public 40 MVA ONAN record (SINTEF DynaLoad, Zenodo
+# 10.5281/zenodo.17223516, CC-BY-4.0), where 74 % of quasi-steady samples show
+# the fibre winding probe reading COLDER than the top-oil probe. The IEC form
+# cannot produce that at any positive parameter value.
+# --------------------------------------------------------------------------
+
+from corefield.observability import check_gradient_datum  # noqa: E402
+
+
+def _gradient_record(offset_K=0.0, rated_K=25.0, y=1.6, n_per_level=40):
+    """Quasi-steady samples across a load range, with an optional datum offset."""
+    levels = np.linspace(0.10, 0.60, 12)
+    load = np.repeat(levels, n_per_level)
+    top_oil = np.full(load.size, 40.0)
+    hotspot = top_oil + rated_K * load**y - offset_K
+    return load, top_oil, hotspot
+
+
+def test_a_shared_datum_is_not_flagged():
+    load, oil, hot = _gradient_record(offset_K=0.0)
+    check = check_gradient_datum(load, oil, hot)
+    assert not check.suspect
+    assert check.negative_fraction == 0.0
+    assert "share a datum" in check.note
+
+
+def test_a_datum_offset_is_detected_and_its_size_recovered():
+    """The offset is the diagnosis; recovering it is what makes the flag useful."""
+    load, oil, hot = _gradient_record(offset_K=11.0, rated_K=51.0, y=1.0)
+    check = check_gradient_datum(load, oil, hot)
+    assert check.suspect
+    assert check.negative_fraction > 0.05
+    assert check.offset_K == pytest.approx(11.0, abs=0.5)
+    assert check.rated_gradient_K == pytest.approx(51.0, rel=0.05)
+    assert check.exponent == pytest.approx(1.0, abs=0.1)
+    # The whole point: allowing the offset explains the data far better.
+    assert check.rmse_with_offset_K < check.rmse_without_offset_K
+
+
+def test_the_note_says_the_offset_is_never_subtracted():
+    """A correction applied silently would invent a measurement."""
+    load, oil, hot = _gradient_record(offset_K=11.0)
+    note = check_gradient_datum(load, oil, hot).note
+    assert "never subtracted" in note
+    assert "cannot produce a negative gradient" in note
+
+
+def test_a_record_that_never_settles_is_not_checked():
+    """The gradient relation is a steady-state statement and needs settled load.
+
+    An earlier version of this test used `linspace`, whose 0.002 pu steps sit
+    INSIDE the 0.01 pu tolerance, so every sample counted as quasi-steady and
+    the test asserted the opposite of what it set up. The load here alternates
+    by 0.4 pu every sample, which genuinely never settles.
+    """
+    load = np.tile([0.20, 0.60], 200)
+    oil = np.full(load.size, 40.0)
+    hot = oil + 25.0 * load**1.6
+    check = check_gradient_datum(load, oil, hot)
+    assert not check.suspect
+    assert check.n_quasi_steady == 0
+    assert "NOT CHECKED" in check.note
+
+
+def test_gradient_datum_mismatched_shapes_are_refused():
+    load, oil, hot = _gradient_record()
+    with pytest.raises(ValueError, match="same shape"):
+        check_gradient_datum(load, oil, hot[:-1])
