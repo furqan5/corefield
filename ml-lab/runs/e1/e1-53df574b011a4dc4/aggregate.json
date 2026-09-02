@@ -1,0 +1,171 @@
+{
+  "configuration": {
+    "day": "C",
+    "private_field_access_configured": true,
+    "private_output_policy": "aggregate metrics only; no stdout or rows retained",
+    "seeds": [
+      1000,
+      1001,
+      1002,
+      1003,
+      1004,
+      1005,
+      1006,
+      1007,
+      1008,
+      1009
+    ]
+  },
+  "field": {
+    "hotspot": {
+      "bias_K": -0.68,
+      "n_observations": 5029,
+      "p95_abs_K": 2.98,
+      "rmse_K": 1.55,
+      "worst_abs_K": 19.96
+    },
+    "openpyxl": "3.1.5",
+    "python": "3.14.6",
+    "script_sha256": "e3472fb7add31f00ac96a69acd7bbabbcc4e2c2b8b9e01054710429b8abf5e97",
+    "top_oil": {
+      "bias_K": -0.93,
+      "n_observations": 5029,
+      "p95_abs_K": 2.7,
+      "rmse_K": 1.34,
+      "worst_abs_K": 5.19
+    }
+  },
+  "gate": {
+    "field": {
+      "checks": [
+        {
+          "absolute_error_K": 0.0,
+          "actual_K": 1.55,
+          "label": "hotspot_rmse_K",
+          "passed": true,
+          "target_K": 1.55,
+          "tolerance_K": 0.02
+        },
+        {
+          "absolute_error_K": 0.0,
+          "actual_K": 1.34,
+          "label": "top_oil_rmse_K",
+          "passed": true,
+          "target_K": 1.34,
+          "tolerance_K": 0.02
+        }
+      ],
+      "status": "pass"
+    },
+    "overall_status": "pass",
+    "synthetic": {
+      "checks": [
+        {
+          "absolute_error_K": 0.0,
+          "actual_K": 2.59,
+          "label": "A.mean_rmse_K",
+          "passed": true,
+          "target_K": 2.59,
+          "tolerance_K": 0.1295
+        },
+        {
+          "absolute_error_K": 0.0,
+          "actual_K": 6.17,
+          "label": "A.largest_signed_peak_error_K",
+          "passed": true,
+          "target_K": 6.17,
+          "tolerance_K": 0.3085
+        },
+        {
+          "absolute_error_K": 0.0,
+          "actual_K": 1.77,
+          "label": "B.mean_rmse_K",
+          "passed": true,
+          "target_K": 1.77,
+          "tolerance_K": 0.08850000000000001
+        },
+        {
+          "absolute_error_K": 0.0,
+          "actual_K": 3.17,
+          "label": "B.largest_signed_peak_error_K",
+          "passed": true,
+          "target_K": 3.17,
+          "tolerance_K": 0.1585
+        },
+        {
+          "absolute_error_K": 0.0,
+          "actual_K": 0.11,
+          "label": "C.mean_rmse_K",
+          "passed": true,
+          "target_K": 0.11,
+          "tolerance_K": 0.01
+        },
+        {
+          "absolute_error_K": 0.0,
+          "actual_K": 0.32,
+          "label": "C.largest_signed_peak_error_K",
+          "passed": true,
+          "target_K": 0.32,
+          "tolerance_K": 0.016
+        }
+      ],
+      "status": "pass"
+    }
+  },
+  "schema_version": 1,
+  "synthetic": {
+    "day": "C",
+    "models": {
+      "A": {
+        "largest_signed_peak_error_K": 6.17,
+        "mean_max_abs_K": 5.76,
+        "mean_rmse_K": 2.59,
+        "mean_signed_peak_error_K": 5.76,
+        "most_negative_signed_peak_error_K": 5.47,
+        "n_seeds": 10,
+        "unsafe_low_seed_fraction": 0.0
+      },
+      "B": {
+        "largest_signed_peak_error_K": 3.17,
+        "mean_max_abs_K": 4.82,
+        "mean_rmse_K": 1.77,
+        "mean_signed_peak_error_K": 2.72,
+        "most_negative_signed_peak_error_K": 2.48,
+        "n_seeds": 10,
+        "unsafe_low_seed_fraction": 0.0
+      },
+      "C": {
+        "largest_signed_peak_error_K": 0.32,
+        "mean_max_abs_K": 0.25,
+        "mean_rmse_K": 0.11,
+        "mean_signed_peak_error_K": -0.02,
+        "most_negative_signed_peak_error_K": -0.29,
+        "n_seeds": 10,
+        "unsafe_low_seed_fraction": 0.6
+      }
+    },
+    "seeds": [
+      1000,
+      1001,
+      1002,
+      1003,
+      1004,
+      1005,
+      1006,
+      1007,
+      1008,
+      1009
+    ],
+    "signed_peak_convention": "max(predicted hotspot_C) - max(true hotspot_C) [K]; negative is unsafe-low",
+    "versions": {
+      "campaign_file": "C:\\Users\\Nouman\\Desktop\\Furqan's Docs\\CoreField-ML-Lab\\vendor\\corefield\\campaign.py",
+      "corefield": "0.1.0.dev0",
+      "corefield_file": "C:\\Users\\Nouman\\Desktop\\Furqan's Docs\\CoreField-ML-Lab\\vendor\\corefield\\__init__.py",
+      "implementation": "CPython",
+      "numpy": "2.5.2",
+      "platform": "Windows-11-10.0.26200-SP0",
+      "python": "3.14.6",
+      "scipy": "1.18.1"
+    }
+  }
+}

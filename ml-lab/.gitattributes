@@ -1,0 +1,10 @@
+# Preserve the frozen protocol hash and byte-identical vendored baseline.
+PREREGISTRATION.md text eol=lf
+README.md text eol=lf
+*.toml text eol=lf
+*.json text eol=lf
+src/**/*.py text eol=lf
+tests/**/*.py text eol=lf
+vendor/corefield/*.py -text
+vendor/LICENSE.corefield -text
+vendor/NOTICE.corefield -text

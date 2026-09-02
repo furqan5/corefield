@@ -1,0 +1,17 @@
+{
+  "aggregate_sha256": "a14eb8e572672dc5e3fa1a3282a0c806887e6b8911fff390c503c7281ffa3e44",
+  "completed_at_utc": "2026-09-01T23:42:09.224967Z",
+  "config_sha256": "53df574b011a4dc401fadc9f7e10058d04b8856da4d937e029153de82a5f57fc",
+  "experiment": "e1",
+  "memory_gate": {
+    "headroom_bytes": 1718621184,
+    "limit_bytes": 2000000000,
+    "passed": true,
+    "peak_rss_bytes": 281378816
+  },
+  "protocol_sha256": "4e50cb8ff5de827dfc18c0206c56baa0b127f31f294aaee2f5737636c1dac4c6",
+  "run_id": "e1-53df574b011a4dc4",
+  "schema_version": 1,
+  "status": "completed",
+  "wall_time_s": 14.32732349995058
+}

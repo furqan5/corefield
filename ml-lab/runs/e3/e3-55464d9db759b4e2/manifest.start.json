@@ -1,0 +1,168 @@
+{
+  "code_commit": "bccae5081fc8c329f6d7d0b58b061818a99d9172",
+  "command": [
+    "C:\\Users\\Nouman\\Desktop\\Furqan's Docs\\CoreField-ML-Lab\\.venv\\Scripts\\python.exe",
+    "-m",
+    "corefield_ml_lab",
+    "e3"
+  ],
+  "config_payload": {
+    "configuration": {
+      "evaluation": {
+        "loads_pu": [
+          1.0,
+          1.15,
+          1.3,
+          1.6
+        ],
+        "score_window": "time_s >= 14400 (four-hour target plateau)",
+        "truth": "noise-free hidden hot-spot temperature"
+      },
+      "features": {
+        "grid_s": 120.0,
+        "pre_record_lags": "opening value (declared settled prehistory)",
+        "reference_alignment": "latest non-future 2 min row; horizon <120 s",
+        "top_oil": "linear interpolation of noisy five-minute samples"
+      },
+      "methods": [
+        "nls",
+        "plain_nn",
+        "pinn",
+        "greybox",
+        "generic_iec"
+      ],
+      "neural_training": {
+        "intraop_threads": 1,
+        "learning_rate": 0.001,
+        "max_epochs": 2000,
+        "minimum_normalized_improvement": 0.0001,
+        "patience": 150,
+        "weight_decay": 1e-06
+      },
+      "physics_mode": "structural_mismatch",
+      "reference_budget": 20,
+      "schedule_amplitudes_frozen_after_prereg_before_primary": {
+        "train_post_event_loads_pu": [
+          0.95,
+          0.65,
+          0.9,
+          0.7,
+          0.93,
+          0.62,
+          0.88
+        ],
+        "validation_post_event_loads_pu": [
+          0.9,
+          0.65,
+          0.92,
+          0.7
+        ]
+      },
+      "seeds": [
+        31000,
+        31001,
+        31002,
+        31003,
+        31004,
+        31005,
+        31006,
+        31007,
+        31008,
+        31009
+      ]
+    },
+    "experiment": "e3",
+    "protocol_sha256": "4e50cb8ff5de827dfc18c0206c56baa0b127f31f294aaee2f5737636c1dac4c6",
+    "schema_version": 1,
+    "seeds": [
+      31000,
+      31001,
+      31002,
+      31003,
+      31004,
+      31005,
+      31006,
+      31007,
+      31008,
+      31009
+    ],
+    "vendor_manifest_sha256": "8cd7c1febc6f58087006ab2cb7624106385abdd19b94f0f8f0809fd016023167"
+  },
+  "config_sha256": "55464d9db759b4e2cfcc4570c6fc0c21b4fa2cb782258384d866004c39c149a1",
+  "environment": {
+    "architecture_bits": 64,
+    "captured_at_utc": "2026-09-01T23:43:05.780791Z",
+    "cpu_environment": {
+      "CUDA_VISIBLE_DEVICES": "-1",
+      "JAX_PLATFORMS": "cpu",
+      "JAX_PLATFORM_NAME": "cpu"
+    },
+    "machine": "AMD64",
+    "packages": [
+      {
+        "name": "corefield",
+        "version": null
+      },
+      {
+        "name": "numpy",
+        "version": "2.5.2"
+      },
+      {
+        "name": "scipy",
+        "version": "1.18.1"
+      },
+      {
+        "name": "pandas",
+        "version": "3.0.5"
+      },
+      {
+        "name": "matplotlib",
+        "version": "3.11.1"
+      },
+      {
+        "name": "pytest",
+        "version": "9.1.1"
+      },
+      {
+        "name": "torch",
+        "version": "2.14.0+cpu"
+      },
+      {
+        "name": "jax",
+        "version": null
+      },
+      {
+        "name": "jaxlib",
+        "version": null
+      },
+      {
+        "name": "scikit-learn",
+        "version": null
+      }
+    ],
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python_executable": "C:\\Users\\Nouman\\Desktop\\Furqan's Docs\\CoreField-ML-Lab\\.venv\\Scripts\\python.exe",
+    "python_implementation": "cpython",
+    "python_version": "3.14.6 (tags/v3.14.6:c63aec6, Jun 10 2026, 10:26:10) [MSC v.1944 64 bit (AMD64)]"
+  },
+  "experiment": "e3",
+  "peak_rss_at_start_bytes": 278904832,
+  "protocol_sha256": "4e50cb8ff5de827dfc18c0206c56baa0b127f31f294aaee2f5737636c1dac4c6",
+  "run_id": "e3-55464d9db759b4e2",
+  "schema_version": 1,
+  "seeds": [
+    31000,
+    31001,
+    31002,
+    31003,
+    31004,
+    31005,
+    31006,
+    31007,
+    31008,
+    31009
+  ],
+  "started_at_utc": "2026-09-01T23:43:05.997624Z",
+  "vendor_manifest_sha256": "8cd7c1febc6f58087006ab2cb7624106385abdd19b94f0f8f0809fd016023167",
+  "was_override": false
+}

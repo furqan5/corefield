@@ -1,0 +1,45 @@
+# Independent lab environment and Python caches
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.pytest-tmp*/
+.coverage
+htmlcov/
+
+# Local configuration and all private/raw data
+.env
+.env.*
+!.env.example
+private/
+data/
+Sources/
+*.csv
+*.tsv
+*.xls
+*.xlsx
+*.parquet
+
+# Generated experiment state and potentially large model artefacts
+artifacts/
+results_private/
+checkpoints/
+*.npy
+*.npz
+*.pt
+*.pth
+*.pkl
+*.joblib
+
+# Build and editor noise
+build/
+dist/
+*.egg-info/
+.idea/
+.vscode/
+Thumbs.db
+.venv/
+__pycache__/
+*.egg-info/
+.pytest_cache/
+.pytest-tmp-*/

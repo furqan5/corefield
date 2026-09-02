@@ -1,0 +1,121 @@
+{
+  "code_commit": "415a07229883af0a88bbc0665eae94a36567146c",
+  "command": [
+    "C:\\Users\\Nouman\\Desktop\\Furqan's Docs\\CoreField-ML-Lab\\.venv\\Scripts\\python.exe",
+    "-m",
+    "corefield_ml_lab",
+    "e1"
+  ],
+  "config_payload": {
+    "configuration": {
+      "day": "C",
+      "private_field_access_configured": true,
+      "private_output_policy": "aggregate metrics only; no stdout or rows retained",
+      "seeds": [
+        1000,
+        1001,
+        1002,
+        1003,
+        1004,
+        1005,
+        1006,
+        1007,
+        1008,
+        1009
+      ]
+    },
+    "experiment": "e1",
+    "protocol_sha256": "4e50cb8ff5de827dfc18c0206c56baa0b127f31f294aaee2f5737636c1dac4c6",
+    "schema_version": 1,
+    "seeds": [
+      1000,
+      1001,
+      1002,
+      1003,
+      1004,
+      1005,
+      1006,
+      1007,
+      1008,
+      1009
+    ],
+    "vendor_manifest_sha256": "8cd7c1febc6f58087006ab2cb7624106385abdd19b94f0f8f0809fd016023167"
+  },
+  "config_sha256": "53df574b011a4dc401fadc9f7e10058d04b8856da4d937e029153de82a5f57fc",
+  "environment": {
+    "architecture_bits": 64,
+    "captured_at_utc": "2026-09-01T23:41:54.674410Z",
+    "cpu_environment": {
+      "CUDA_VISIBLE_DEVICES": "-1",
+      "JAX_PLATFORMS": "cpu",
+      "JAX_PLATFORM_NAME": "cpu"
+    },
+    "machine": "AMD64",
+    "packages": [
+      {
+        "name": "corefield",
+        "version": null
+      },
+      {
+        "name": "numpy",
+        "version": "2.5.2"
+      },
+      {
+        "name": "scipy",
+        "version": "1.18.1"
+      },
+      {
+        "name": "pandas",
+        "version": "3.0.5"
+      },
+      {
+        "name": "matplotlib",
+        "version": "3.11.1"
+      },
+      {
+        "name": "pytest",
+        "version": "9.1.1"
+      },
+      {
+        "name": "torch",
+        "version": "2.14.0+cpu"
+      },
+      {
+        "name": "jax",
+        "version": null
+      },
+      {
+        "name": "jaxlib",
+        "version": null
+      },
+      {
+        "name": "scikit-learn",
+        "version": null
+      }
+    ],
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python_executable": "C:\\Users\\Nouman\\Desktop\\Furqan's Docs\\CoreField-ML-Lab\\.venv\\Scripts\\python.exe",
+    "python_implementation": "cpython",
+    "python_version": "3.14.6 (tags/v3.14.6:c63aec6, Jun 10 2026, 10:26:10) [MSC v.1944 64 bit (AMD64)]"
+  },
+  "experiment": "e1",
+  "peak_rss_at_start_bytes": 278556672,
+  "protocol_sha256": "4e50cb8ff5de827dfc18c0206c56baa0b127f31f294aaee2f5737636c1dac4c6",
+  "run_id": "e1-53df574b011a4dc4",
+  "schema_version": 1,
+  "seeds": [
+    1000,
+    1001,
+    1002,
+    1003,
+    1004,
+    1005,
+    1006,
+    1007,
+    1008,
+    1009
+  ],
+  "started_at_utc": "2026-09-01T23:41:54.893555Z",
+  "vendor_manifest_sha256": "8cd7c1febc6f58087006ab2cb7624106385abdd19b94f0f8f0809fd016023167",
+  "was_override": false
+}
