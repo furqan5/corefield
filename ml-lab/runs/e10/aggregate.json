@@ -1,0 +1,581 @@
+{
+ "label": "(b) polynomial stand-in for real emissivity maps",
+ "additive": [
+  {
+   "rows": 16,
+   "order": 0,
+   "percent": 0.3550511908882526
+  },
+  {
+   "rows": 16,
+   "order": 1,
+   "percent": 0.4176305141996964
+  },
+  {
+   "rows": 16,
+   "order": 2,
+   "percent": 0.5062611140146072
+  },
+  {
+   "rows": 16,
+   "order": 3,
+   "percent": 0.5070630786686229
+  },
+  {
+   "rows": 16,
+   "order": 4,
+   "percent": 1.224343277305877
+  },
+  {
+   "rows": 16,
+   "order": 5,
+   "percent": 2.712726023564324
+  },
+  {
+   "rows": 16,
+   "order": 6,
+   "percent": 3.81557803859076
+  },
+  {
+   "rows": 32,
+   "order": 0,
+   "percent": 0.2539258612351427
+  },
+  {
+   "rows": 32,
+   "order": 1,
+   "percent": 0.31654145080780427
+  },
+  {
+   "rows": 32,
+   "order": 2,
+   "percent": 0.38770581413247046
+  },
+  {
+   "rows": 32,
+   "order": 3,
+   "percent": 0.3909920719032692
+  },
+  {
+   "rows": 32,
+   "order": 4,
+   "percent": 0.8658527286358804
+  },
+  {
+   "rows": 32,
+   "order": 5,
+   "percent": 1.8886200409702427
+  },
+  {
+   "rows": 32,
+   "order": 6,
+   "percent": 2.5366585337909817
+  },
+  {
+   "rows": 64,
+   "order": 0,
+   "percent": 0.1805924294068772
+  },
+  {
+   "rows": 64,
+   "order": 1,
+   "percent": 0.2332860483079362
+  },
+  {
+   "rows": 64,
+   "order": 2,
+   "percent": 0.28787303144616583
+  },
+  {
+   "rows": 64,
+   "order": 3,
+   "percent": 0.29257544116524203
+  },
+  {
+   "rows": 64,
+   "order": 4,
+   "percent": 0.6218843982175246
+  },
+  {
+   "rows": 64,
+   "order": 5,
+   "percent": 1.388312712622207
+  },
+  {
+   "rows": 64,
+   "order": 6,
+   "percent": 1.8863409603456942
+  },
+  {
+   "rows": 128,
+   "order": 0,
+   "percent": 0.1280530866739995
+  },
+  {
+   "rows": 128,
+   "order": 1,
+   "percent": 0.16872140576328795
+  },
+  {
+   "rows": 128,
+   "order": 2,
+   "percent": 0.20908500720849896
+  },
+  {
+   "rows": 128,
+   "order": 3,
+   "percent": 0.21364735755016492
+  },
+  {
+   "rows": 128,
+   "order": 4,
+   "percent": 0.44446238393869697
+  },
+  {
+   "rows": 128,
+   "order": 5,
+   "percent": 1.0107651756561749
+  },
+  {
+   "rows": 128,
+   "order": 6,
+   "percent": 1.3904021959344839
+  },
+  {
+   "rows": 256,
+   "order": 0,
+   "percent": 0.09066863426518451
+  },
+  {
+   "rows": 256,
+   "order": 1,
+   "percent": 0.1207121595178443
+  },
+  {
+   "rows": 256,
+   "order": 2,
+   "percent": 0.14992814263444249
+  },
+  {
+   "rows": 256,
+   "order": 3,
+   "percent": 0.15368049211122797
+  },
+  {
+   "rows": 256,
+   "order": 4,
+   "percent": 0.3161090511281496
+  },
+  {
+   "rows": 256,
+   "order": 5,
+   "percent": 0.7267647307424991
+  },
+  {
+   "rows": 256,
+   "order": 6,
+   "percent": 1.007665159115031
+  }
+ ],
+ "multiplicative": [
+  {
+   "rows": 16,
+   "order": 0,
+   "percent": 0.3550511908882526
+  },
+  {
+   "rows": 16,
+   "order": 1,
+   "percent": 0.4618015255043637
+  },
+  {
+   "rows": 16,
+   "order": 2,
+   "percent": 0.48299445212243813
+  },
+  {
+   "rows": 16,
+   "order": 3,
+   "percent": 0.8562556301663516
+  },
+  {
+   "rows": 16,
+   "order": 4,
+   "percent": 2.31366439433702
+  },
+  {
+   "rows": 16,
+   "order": 5,
+   "percent": 2.5746364379734716
+  },
+  {
+   "rows": 16,
+   "order": 6,
+   "percent": 3.7772388762482025
+  },
+  {
+   "rows": 32,
+   "order": 0,
+   "percent": 0.2539258612351427
+  },
+  {
+   "rows": 32,
+   "order": 1,
+   "percent": 0.35623347097756747
+  },
+  {
+   "rows": 32,
+   "order": 2,
+   "percent": 0.3644386696829133
+  },
+  {
+   "rows": 32,
+   "order": 3,
+   "percent": 0.6263600922847463
+  },
+  {
+   "rows": 32,
+   "order": 4,
+   "percent": 1.600948797844725
+  },
+  {
+   "rows": 32,
+   "order": 5,
+   "percent": 1.7756156127659148
+  },
+  {
+   "rows": 32,
+   "order": 6,
+   "percent": 2.5949353343029746
+  },
+  {
+   "rows": 64,
+   "order": 0,
+   "percent": 0.1805924294068772
+  },
+  {
+   "rows": 64,
+   "order": 1,
+   "percent": 0.2652881204214923
+  },
+  {
+   "rows": 64,
+   "order": 2,
+   "percent": 0.2687587143665382
+  },
+  {
+   "rows": 64,
+   "order": 3,
+   "percent": 0.45337524708102783
+  },
+  {
+   "rows": 64,
+   "order": 4,
+   "percent": 1.1558775342564276
+  },
+  {
+   "rows": 64,
+   "order": 5,
+   "percent": 1.3185889394826111
+  },
+  {
+   "rows": 64,
+   "order": 6,
+   "percent": Infinity
+  },
+  {
+   "rows": 128,
+   "order": 0,
+   "percent": 0.1280530866739995
+  },
+  {
+   "rows": 128,
+   "order": 1,
+   "percent": 0.19292101269900153
+  },
+  {
+   "rows": 128,
+   "order": 2,
+   "percent": 0.19461825115081507
+  },
+  {
+   "rows": 128,
+   "order": 3,
+   "percent": 0.3249700223215611
+  },
+  {
+   "rows": 128,
+   "order": 4,
+   "percent": 0.8300705320274574
+  },
+  {
+   "rows": 128,
+   "order": 5,
+   "percent": 0.968555766082895
+  },
+  {
+   "rows": 128,
+   "order": 6,
+   "percent": Infinity
+  },
+  {
+   "rows": 256,
+   "order": 0,
+   "percent": 0.09066863426518451
+  },
+  {
+   "rows": 256,
+   "order": 1,
+   "percent": 0.13841193251704195
+  },
+  {
+   "rows": 256,
+   "order": 2,
+   "percent": 0.13936546461878208
+  },
+  {
+   "rows": 256,
+   "order": 3,
+   "percent": 0.23147104441121522
+  },
+  {
+   "rows": 256,
+   "order": 4,
+   "percent": 0.5920132383961895
+  },
+  {
+   "rows": 256,
+   "order": 5,
+   "percent": 0.7003667884210631
+  },
+  {
+   "rows": 256,
+   "order": 6,
+   "percent": Infinity
+  }
+ ],
+ "both": [
+  {
+   "rows": 32,
+   "order": 0,
+   "percent": 0.2539258612351427
+  },
+  {
+   "rows": 32,
+   "order": 1,
+   "percent": 0.3572390526815957
+  },
+  {
+   "rows": 32,
+   "order": 2,
+   "percent": 5.842051017052692
+  },
+  {
+   "rows": 32,
+   "order": 3,
+   "percent": Infinity
+  },
+  {
+   "rows": 32,
+   "order": 4,
+   "percent": Infinity
+  },
+  {
+   "rows": 64,
+   "order": 0,
+   "percent": 0.1805924294068772
+  },
+  {
+   "rows": 64,
+   "order": 1,
+   "percent": 0.26553434026637507
+  },
+  {
+   "rows": 64,
+   "order": 2,
+   "percent": 4.387262552191918
+  },
+  {
+   "rows": 64,
+   "order": 3,
+   "percent": Infinity
+  },
+  {
+   "rows": 64,
+   "order": 4,
+   "percent": Infinity
+  },
+  {
+   "rows": 128,
+   "order": 0,
+   "percent": 0.1280530866739995
+  },
+  {
+   "rows": 128,
+   "order": 1,
+   "percent": 0.19298213953620652
+  },
+  {
+   "rows": 128,
+   "order": 2,
+   "percent": 3.231005113775594
+  },
+  {
+   "rows": 128,
+   "order": 3,
+   "percent": Infinity
+  },
+  {
+   "rows": 128,
+   "order": 4,
+   "percent": Infinity
+  },
+  {
+   "rows": 256,
+   "order": 0,
+   "percent": 0.09066863426518451
+  },
+  {
+   "rows": 256,
+   "order": 1,
+   "percent": 0.13842899326950006
+  },
+  {
+   "rows": 256,
+   "order": 2,
+   "percent": 2.3359774915755573
+  },
+  {
+   "rows": 256,
+   "order": 3,
+   "percent": Infinity
+  },
+  {
+   "rows": 256,
+   "order": 4,
+   "percent": Infinity
+  }
+ ],
+ "localised": [
+  {
+   "spike_z": 0.2,
+   "rows": 32,
+   "percent": 0.3724888256130915
+  },
+  {
+   "spike_z": 0.2,
+   "rows": 64,
+   "percent": 0.27758091148793274
+  },
+  {
+   "spike_z": 0.2,
+   "rows": 128,
+   "percent": 0.20202837432055898
+  },
+  {
+   "spike_z": 0.2,
+   "rows": 256,
+   "percent": 0.14502920005569817
+  },
+  {
+   "spike_z": 0.5,
+   "rows": 32,
+   "percent": 0.42045781200162846
+  },
+  {
+   "spike_z": 0.5,
+   "rows": 64,
+   "percent": 0.3133218442089465
+  },
+  {
+   "spike_z": 0.5,
+   "rows": 128,
+   "percent": 0.22808604291149537
+  },
+  {
+   "spike_z": 0.5,
+   "rows": 256,
+   "percent": 0.16376097097929568
+  },
+  {
+   "spike_z": 0.7,
+   "rows": 32,
+   "percent": 0.532348142045668
+  },
+  {
+   "spike_z": 0.7,
+   "rows": 64,
+   "percent": 0.4013182578368265
+  },
+  {
+   "spike_z": 0.7,
+   "rows": 128,
+   "percent": 0.2941346802630508
+  },
+  {
+   "spike_z": 0.7,
+   "rows": 256,
+   "percent": 0.2119527192568637
+  },
+  {
+   "spike_z": 0.85,
+   "rows": 32,
+   "percent": 2.0452180719727746
+  },
+  {
+   "spike_z": 0.85,
+   "rows": 64,
+   "percent": 1.5235586398660463
+  },
+  {
+   "spike_z": 0.85,
+   "rows": 128,
+   "percent": 1.1131522193525436
+  },
+  {
+   "spike_z": 0.85,
+   "rows": 256,
+   "percent": 0.8014765612156429
+  },
+  {
+   "spike_z": 0.9,
+   "rows": 32,
+   "percent": 1.6214571899383186
+  },
+  {
+   "spike_z": 0.9,
+   "rows": 64,
+   "percent": 1.1858740915544388
+  },
+  {
+   "spike_z": 0.9,
+   "rows": 128,
+   "percent": 0.8583444523416578
+  },
+  {
+   "spike_z": 0.9,
+   "rows": 256,
+   "percent": 0.6151431542598313
+  },
+  {
+   "spike_z": 0.95,
+   "rows": 32,
+   "percent": 1.481598168093107
+  },
+  {
+   "spike_z": 0.95,
+   "rows": 64,
+   "percent": 1.1057838556471662
+  },
+  {
+   "spike_z": 0.95,
+   "rows": 128,
+   "percent": 0.8149505985817521
+  },
+  {
+   "spike_z": 0.95,
+   "rows": 256,
+   "percent": 0.5904953946540985
+  }
+ ]
+}

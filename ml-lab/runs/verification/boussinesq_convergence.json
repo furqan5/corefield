@@ -1,0 +1,131 @@
+{
+ "note": "mesh convergence is the pass criterion; quoted values are unverified",
+ "quoted_unverified": {
+  "1000.0": 1.118,
+  "10000.0": 2.243,
+  "100000.0": 4.519,
+  "1000000.0": 8.8
+ },
+ "runs": [
+  {
+   "rayleigh": 1000.0,
+   "refine": 3,
+   "cells": 128,
+   "dofs": 948,
+   "iterations": 15,
+   "converged": true,
+   "nusselt": 1.122097136757627,
+   "change_percent": null
+  },
+  {
+   "rayleigh": 1000.0,
+   "refine": 4,
+   "cells": 512,
+   "dofs": 3556,
+   "iterations": 15,
+   "converged": true,
+   "nusselt": 1.1184659494462073,
+   "change_percent": 0.3236072165652433
+  },
+  {
+   "rayleigh": 1000.0,
+   "refine": 5,
+   "cells": 2048,
+   "dofs": 13764,
+   "iterations": 15,
+   "converged": true,
+   "nusselt": 1.1178952212986752,
+   "change_percent": 0.051027762428940734
+  },
+  {
+   "rayleigh": 1000.0,
+   "refine": 6,
+   "cells": 8192,
+   "dofs": 54148,
+   "iterations": 15,
+   "converged": true,
+   "nusselt": 1.117815537693204,
+   "change_percent": 0.007128003050116958
+  },
+  {
+   "rayleigh": 10000.0,
+   "refine": 3,
+   "cells": 128,
+   "dofs": 948,
+   "iterations": 25,
+   "converged": true,
+   "nusselt": 2.370971300492283,
+   "change_percent": null
+  },
+  {
+   "rayleigh": 10000.0,
+   "refine": 4,
+   "cells": 512,
+   "dofs": 3556,
+   "iterations": 25,
+   "converged": true,
+   "nusselt": 2.293229172366525,
+   "change_percent": 3.2789147683743227
+  },
+  {
+   "rayleigh": 10000.0,
+   "refine": 5,
+   "cells": 2048,
+   "dofs": 13764,
+   "iterations": 25,
+   "converged": true,
+   "nusselt": 2.277502383756188,
+   "change_percent": 0.6857922792822095
+  },
+  {
+   "rayleigh": 10000.0,
+   "refine": 6,
+   "cells": 8192,
+   "dofs": 54148,
+   "iterations": 25,
+   "converged": true,
+   "nusselt": 2.2751932629383065,
+   "change_percent": 0.10138829422751412
+  },
+  {
+   "rayleigh": 100000.0,
+   "refine": 3,
+   "cells": 128,
+   "dofs": 948,
+   "iterations": 125,
+   "converged": true,
+   "nusselt": 5.902050914866366,
+   "change_percent": null
+  },
+  {
+   "rayleigh": 100000.0,
+   "refine": 4,
+   "cells": 512,
+   "dofs": 3556,
+   "iterations": 100,
+   "converged": true,
+   "nusselt": 4.927681883947045,
+   "change_percent": 16.50899060299588
+  },
+  {
+   "rayleigh": 100000.0,
+   "refine": 5,
+   "cells": 2048,
+   "dofs": 13764,
+   "iterations": 99,
+   "converged": true,
+   "nusselt": 4.7663078856006225,
+   "change_percent": 3.274846107094133
+  },
+  {
+   "rayleigh": 100000.0,
+   "refine": 6,
+   "cells": 8192,
+   "dofs": 54148,
+   "iterations": 99,
+   "converged": true,
+   "nusselt": 4.731093886135502,
+   "change_percent": 0.7388108429063998
+  }
+ ]
+}
