@@ -1,0 +1,285 @@
+{
+ "label": "(b) polynomial stand-in for leakage-flux tank heating",
+ "single_survey": [
+  {
+   "rows": 32,
+   "eddy_order": 0,
+   "percent": 0.2539258612351427
+  },
+  {
+   "rows": 32,
+   "eddy_order": 1,
+   "percent": 0.31654145080780477
+  },
+  {
+   "rows": 32,
+   "eddy_order": 2,
+   "percent": 0.3877058141324698
+  },
+  {
+   "rows": 32,
+   "eddy_order": 3,
+   "percent": 0.3909920719032677
+  },
+  {
+   "rows": 32,
+   "eddy_order": 4,
+   "percent": 0.865852728626809
+  },
+  {
+   "rows": 32,
+   "eddy_order": 5,
+   "percent": 1.8886200400831197
+  },
+  {
+   "rows": 64,
+   "eddy_order": 0,
+   "percent": 0.1805924294068772
+  },
+  {
+   "rows": 64,
+   "eddy_order": 1,
+   "percent": 0.23328604830793728
+  },
+  {
+   "rows": 64,
+   "eddy_order": 2,
+   "percent": 0.28787303144616455
+  },
+  {
+   "rows": 64,
+   "eddy_order": 3,
+   "percent": 0.2925754411652436
+  },
+  {
+   "rows": 64,
+   "eddy_order": 4,
+   "percent": 0.6218843982155483
+  },
+  {
+   "rows": 64,
+   "eddy_order": 5,
+   "percent": 1.3883127129194595
+  },
+  {
+   "rows": 128,
+   "eddy_order": 0,
+   "percent": 0.1280530866739995
+  },
+  {
+   "rows": 128,
+   "eddy_order": 1,
+   "percent": 0.16872140576328817
+  },
+  {
+   "rows": 128,
+   "eddy_order": 2,
+   "percent": 0.20908500720849998
+  },
+  {
+   "rows": 128,
+   "eddy_order": 3,
+   "percent": 0.21364735755016753
+  },
+  {
+   "rows": 128,
+   "eddy_order": 4,
+   "percent": 0.44446238393972576
+  },
+  {
+   "rows": 128,
+   "eddy_order": 5,
+   "percent": 1.0107651753895452
+  },
+  {
+   "rows": 256,
+   "eddy_order": 0,
+   "percent": 0.09066863426518451
+  },
+  {
+   "rows": 256,
+   "eddy_order": 1,
+   "percent": 0.12071215951784521
+  },
+  {
+   "rows": 256,
+   "eddy_order": 2,
+   "percent": 0.14992814263444193
+  },
+  {
+   "rows": 256,
+   "eddy_order": 3,
+   "percent": 0.15368049211122717
+  },
+  {
+   "rows": 256,
+   "eddy_order": 4,
+   "percent": 0.3161090511275306
+  },
+  {
+   "rows": 256,
+   "eddy_order": 5,
+   "percent": 0.7267647311949208
+  }
+ ],
+ "multi_load": [
+  {
+   "loads": [
+    0.5,
+    1.0
+   ],
+   "eddy_order": 1,
+   "percent": 0.21227168811322658
+  },
+  {
+   "loads": [
+    0.5,
+    1.0
+   ],
+   "eddy_order": 2,
+   "percent": 0.25994084915469323
+  },
+  {
+   "loads": [
+    0.5,
+    1.0
+   ],
+   "eddy_order": 3,
+   "percent": 0.2664088866751038
+  },
+  {
+   "loads": [
+    0.5,
+    1.0
+   ],
+   "eddy_order": 4,
+   "percent": 0.3910848099463242
+  },
+  {
+   "loads": [
+    0.5,
+    1.0
+   ],
+   "eddy_order": 5,
+   "percent": 0.7980743882465363
+  },
+  {
+   "loads": [
+    0.4,
+    0.7,
+    1.0
+   ],
+   "eddy_order": 1,
+   "percent": 0.18715014875484165
+  },
+  {
+   "loads": [
+    0.4,
+    0.7,
+    1.0
+   ],
+   "eddy_order": 2,
+   "percent": 0.233127196181182
+  },
+  {
+   "loads": [
+    0.4,
+    0.7,
+    1.0
+   ],
+   "eddy_order": 3,
+   "percent": 0.23861377304928455
+  },
+  {
+   "loads": [
+    0.4,
+    0.7,
+    1.0
+   ],
+   "eddy_order": 4,
+   "percent": 0.3436624227287752
+  },
+  {
+   "loads": [
+    0.4,
+    0.7,
+    1.0
+   ],
+   "eddy_order": 5,
+   "percent": 0.7030429451399118
+  },
+  {
+   "loads": [
+    0.3,
+    0.5,
+    0.7,
+    0.9,
+    1.1
+   ],
+   "eddy_order": 1,
+   "percent": 0.13555590907587908
+  },
+  {
+   "loads": [
+    0.3,
+    0.5,
+    0.7,
+    0.9,
+    1.1
+   ],
+   "eddy_order": 2,
+   "percent": 0.17175968686518694
+  },
+  {
+   "loads": [
+    0.3,
+    0.5,
+    0.7,
+    0.9,
+    1.1
+   ],
+   "eddy_order": 3,
+   "percent": 0.17569012847159265
+  },
+  {
+   "loads": [
+    0.3,
+    0.5,
+    0.7,
+    0.9,
+    1.1
+   ],
+   "eddy_order": 4,
+   "percent": 0.24897937660402417
+  },
+  {
+   "loads": [
+    0.3,
+    0.5,
+    0.7,
+    0.9,
+    1.1
+   ],
+   "eddy_order": 5,
+   "percent": 0.5129364215995693
+  }
+ ],
+ "migration": [
+  {
+   "rows": 32,
+   "percent": 0.35910539679600734
+  },
+  {
+   "rows": 64,
+   "percent": 0.2553962629291115
+  },
+  {
+   "rows": 128,
+   "percent": 0.18109441187810757
+  },
+  {
+   "rows": 256,
+   "percent": 0.12822481225966986
+  }
+ ]
+}
