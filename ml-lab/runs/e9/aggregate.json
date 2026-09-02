@@ -1,0 +1,161 @@
+{
+ "label": "(b) simple radial-smearing extension, not CFD",
+ "absolute_error_immunity": [
+  {
+   "bias_K": 0.0,
+   "gain": 1.0,
+   "axial_std_percent": 0.3943631315003733
+  },
+  {
+   "bias_K": 2.0,
+   "gain": 1.0,
+   "axial_std_percent": 0.3943631315003733
+  },
+  {
+   "bias_K": -5.0,
+   "gain": 1.0,
+   "axial_std_percent": 0.3943631315003733
+  },
+  {
+   "bias_K": 0.0,
+   "gain": 1.15,
+   "axial_std_percent": 0.34292446217423767
+  },
+  {
+   "bias_K": 2.0,
+   "gain": 0.85,
+   "axial_std_percent": 0.46395662529455683
+  }
+ ],
+ "baseline_axial_percent_at_netd_0p05": 0.3943631315003733,
+ "radial_confounding": [
+  {
+   "netd_K": 0.05,
+   "n_sensors": 8,
+   "axial_r_known": 0.5480180274402777,
+   "axial_r_unknown": 1.69882991993748,
+   "cost_ratio": 3.0999526199393435,
+   "radial_std_percent": 46.59579826236403
+  },
+  {
+   "netd_K": 0.05,
+   "n_sensors": 16,
+   "axial_r_known": 0.3943631315003733,
+   "axial_r_unknown": 1.002430244424881,
+   "cost_ratio": 2.5418964511491917,
+   "radial_std_percent": 27.403317960579663
+  },
+  {
+   "netd_K": 0.05,
+   "n_sensors": 32,
+   "axial_r_known": 0.28350608563356927,
+   "axial_r_unknown": 0.7126620845237264,
+   "cost_ratio": 2.513745279686306,
+   "radial_std_percent": 19.307342109129404
+  },
+  {
+   "netd_K": 0.05,
+   "n_sensors": 64,
+   "axial_r_known": 0.20217586257503706,
+   "axial_r_unknown": 0.5052019846231404,
+   "cost_ratio": 2.4988244303181144,
+   "radial_std_percent": 13.63123583377581
+  },
+  {
+   "netd_K": 0.1,
+   "n_sensors": 8,
+   "axial_r_known": 1.0960360548805554,
+   "axial_r_unknown": 3.39765983987496,
+   "cost_ratio": 3.0999526199393435,
+   "radial_std_percent": 93.19159652472806
+  },
+  {
+   "netd_K": 0.1,
+   "n_sensors": 16,
+   "axial_r_known": 0.7887262630007466,
+   "axial_r_unknown": 2.004860488849762,
+   "cost_ratio": 2.5418964511491917,
+   "radial_std_percent": 54.80663592115933
+  },
+  {
+   "netd_K": 0.1,
+   "n_sensors": 32,
+   "axial_r_known": 0.5670121712671385,
+   "axial_r_unknown": 1.4253241690474527,
+   "cost_ratio": 2.513745279686306,
+   "radial_std_percent": 38.61468421825881
+  },
+  {
+   "netd_K": 0.1,
+   "n_sensors": 64,
+   "axial_r_known": 0.4043517251500741,
+   "axial_r_unknown": 1.0104039692462807,
+   "cost_ratio": 2.4988244303181144,
+   "radial_std_percent": 27.26247166755162
+  },
+  {
+   "netd_K": 0.25,
+   "n_sensors": 8,
+   "axial_r_known": 2.740090137201389,
+   "axial_r_unknown": 8.494149599687388,
+   "cost_ratio": 3.099952619939339,
+   "radial_std_percent": 232.97899131181987
+  },
+  {
+   "netd_K": 0.25,
+   "n_sensors": 16,
+   "axial_r_known": 1.9718156575018662,
+   "axial_r_unknown": 5.012151222124399,
+   "cost_ratio": 2.5418964511491895,
+   "radial_std_percent": 137.01658980289818
+  },
+  {
+   "netd_K": 0.25,
+   "n_sensors": 32,
+   "axial_r_known": 1.4175304281678458,
+   "axial_r_unknown": 3.5633104226186254,
+   "cost_ratio": 2.5137452796863022,
+   "radial_std_percent": 96.53671054564687
+  },
+  {
+   "netd_K": 0.25,
+   "n_sensors": 64,
+   "axial_r_known": 1.0108793128751858,
+   "axial_r_unknown": 2.526009923115704,
+   "cost_ratio": 2.4988244303181153,
+   "radial_std_percent": 68.15617916887908
+  }
+ ],
+ "smear_sensitivity": [
+  {
+   "smear": 0.05,
+   "axial_r_known": 0.2594622858809702,
+   "axial_r_unknown": 0.7088913426085334,
+   "cost": 2.7321556202343076
+  },
+  {
+   "smear": 0.15,
+   "axial_r_known": 0.271100393124287,
+   "axial_r_unknown": 0.7127505290759649,
+   "cost": 2.629101790897078
+  },
+  {
+   "smear": 0.25,
+   "axial_r_known": 0.28350608563356927,
+   "axial_r_unknown": 0.7126620845237264,
+   "cost": 2.513745279686306
+  },
+  {
+   "smear": 0.5,
+   "axial_r_known": 0.3179569043602839,
+   "axial_r_unknown": 0.7062225737232896,
+   "cost": 2.221126712578172
+  },
+  {
+   "smear": 1.0,
+   "axial_r_known": 0.40116709157850433,
+   "axial_r_unknown": 0.7137559721371131,
+   "cost": 1.7791987107632388
+  }
+ ]
+}
