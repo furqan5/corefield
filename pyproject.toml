@@ -8,13 +8,16 @@ version = "0.1.0.dev0"
 description = "Transformer winding hot-spot estimation and dynamic loading envelopes from IEC 60076-7 thermal parameter identification"
 readme = "README.md"
 requires-python = ">=3.11"
-# Code is Apache-2.0. Documentation is CC BY 4.0 -- see LICENSE-docs and NOTICE.
-# Only the code licence is declared here, because this field describes the
-# distributed package, which contains code.
-license = "Apache-2.0"
-license-files = ["LICENSE", "NOTICE"]
+# Code is PolyForm Noncommercial 1.0.0 from 2026-09-02. Documentation remains
+# CC BY 4.0 -- see LICENSE-docs and NOTICE. Only the code licence is declared
+# here, because this field describes the distributed package, which is code.
+# Releases before 2026-09-02 were Apache-2.0 and remain so; see NOTICE.
+license = "PolyForm-Noncommercial-1.0.0"
+license-files = ["LICENSE", "NOTICE", "LICENSE-Apache-2.0-historical"]
 keywords = ["transformer", "thermal", "hot-spot", "IEC-60076-7", "power-systems", "dynamic-rating"]
 classifiers = [
+    # No OSI licence classifier: PolyForm Noncommercial restricts the field of
+    # endeavour, so it is source-available rather than open source.
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
     "Programming Language :: Python :: 3",

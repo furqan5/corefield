@@ -343,13 +343,25 @@ The demo adds Streamlit and Matplotlib; dependency installation requires network
 
 ## Licence
 
-**Code** — Apache License 2.0. See [LICENSE](LICENSE). Apache-2.0 rather than MIT for its
-explicit patent grant and its requirement that modifications be marked; both matter for
-engineering software that may end up in a regulated decision path.
+**Code** — **PolyForm Noncommercial License 1.0.0**, from 2 September 2026. See
+[LICENSE](LICENSE). Noncommercial use — research, education, personal study, public institutions —
+is expressly permitted by the licence; commercial use requires a separate licence from the
+copyright holder.
 
-**Documentation** — Creative Commons Attribution 4.0 International. See
+**This is source-available, not open source.** PolyForm Noncommercial restricts the field of
+endeavour, so it does not meet the Open Source Definition and is not OSI-approved. The source stays
+readable, runnable and auditable, which is what this project's inspectability claims actually rest
+on — but calling it "open source" would be wrong.
+
+**The previous licence is not revoked.** Code released before 2 September 2026 was Apache-2.0 and
+remains available under those terms, commercial use included. That grant is irrevocable and nothing
+here attempts to withdraw it. The historical text is kept at
+[LICENSE-Apache-2.0-historical](LICENSE-Apache-2.0-historical).
+
+**Documentation** — Creative Commons Attribution 4.0 International, **unchanged**. See
 [LICENSE-docs](LICENSE-docs). The prose files carry the evidence and the retractions, and CC BY
-lets them be quoted and built on with attribution intact.
+lets them be quoted and built on with attribution intact. That is deliberate: the claims and their
+limitations should stay checkable by anyone, whatever the code licence says.
 
 See [NOTICE](NOTICE) for the attribution notice, the split between the two licences, and two
 things the licences do not cover: **no IEC standard text is redistributed here**, and

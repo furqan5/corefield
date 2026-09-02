@@ -4,29 +4,60 @@ Copyright 2026 CoreField (Furqan Shakeel)
 This product includes software developed by CoreField.
 Founder and copyright holder: Furqan Shakeel.
 
-Licensed under the Apache License, Version 2.0 (the "License"); you may not
-use this file except in compliance with the License. You may obtain a copy of
-the License at
+Licensed under the PolyForm Noncommercial License 1.0.0. You may obtain a copy
+of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+    https://polyformproject.org/licenses/noncommercial/1.0.0
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-License for the specific language governing permissions and limitations under
-the License.
+Use is permitted for noncommercial purposes only, as that term is defined by
+the License. Commercial use requires a separate licence from the copyright
+holder. Contact the copyright holder to discuss commercial terms.
 
 --------------------------------------------------------------------------
-DUAL LICENSING
+THIS IS NOT AN OPEN-SOURCE LICENCE
+--------------------------------------------------------------------------
+
+The PolyForm Noncommercial License restricts the field of endeavour, so it
+does not meet the Open Source Definition and is not an OSI-approved licence.
+This project is SOURCE-AVAILABLE, not open source. Any description of it as
+"open source" is incorrect and should be corrected.
+
+The source remains readable, runnable and auditable, which is what the
+project's claims about inspectability depend on. Academic, research and
+educational use is expressly permitted by the licence.
+
+--------------------------------------------------------------------------
+LICENCE CHANGE, 2 SEPTEMBER 2026 -- THE PREVIOUS GRANT IS NOT REVOKED
+--------------------------------------------------------------------------
+
+Code in this repository was previously licensed under the Apache License 2.0.
+That licence changed to PolyForm Noncommercial 1.0.0 on 2 September 2026, and
+the change applies only from that date forward.
+
+Every version published before that date remains available under the Apache
+License 2.0, and anyone who obtained the software under those terms keeps
+them for those versions, including for commercial use. That grant is
+irrevocable and this notice does not attempt to withdraw it. The historical
+licence text is retained in LICENSE-Apache-2.0-historical.
+
+Contributions: the sole author and copyright holder to date is Furqan
+Shakeel, so no third-party contributor consent was required for this change.
+
+--------------------------------------------------------------------------
+DOCUMENTATION LICENCE -- UNCHANGED
 --------------------------------------------------------------------------
 
 Code (everything under corefield/, tests/, app/, scripts/, and the build
-configuration) is licensed under the Apache License 2.0. See LICENSE.
+configuration) is licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
 
 Documentation (README.md, EVIDENCE.md, PREDICTIONS.md, WITHDRAWN.md,
-REPRODUCTION.md, ASSESSMENT.md, and other prose files) is licensed under the
-Creative Commons Attribution 4.0 International License. See LICENSE-docs, or
-https://creativecommons.org/licenses/by/4.0/
+REPRODUCTION.md, ASSESSMENT.md, CHANGES.log and other prose files) remains
+licensed under the Creative Commons Attribution 4.0 International License.
+See LICENSE-docs, or https://creativecommons.org/licenses/by/4.0/
+
+The evidence ledger and the record of what this project does and does not
+establish are deliberately left under a permissive licence, so that the
+claims and their limitations stay quotable and checkable by anyone.
 
 --------------------------------------------------------------------------
 THIRD-PARTY STANDARDS
@@ -50,10 +81,10 @@ source them and record their provenance. See corefield/envelope.py.
 NO WARRANTY OF FITNESS FOR TRANSFORMER OPERATION
 --------------------------------------------------------------------------
 
-Beyond the disclaimer in the Apache License, note specifically: synthetic
-tests, qualified retrospective operating-data analysis, and exploratory
-comparisons with published measurements do not establish fitness for
-operational loading. No operational overload capability is validated. Decisions about
-loading, derating, or overloading electrical plant carry safety and asset
+Beyond the disclaimer in the licence, note specifically: synthetic tests,
+qualified retrospective operating-data analysis, and exploratory comparisons
+with published measurements do not establish fitness for operational loading.
+No operational overload capability is validated. Decisions about loading,
+derating, or overloading electrical plant carry safety and asset
 consequences, and this software must not be relied upon as the sole basis for
 any such decision. See the Limitations section of README.md.
