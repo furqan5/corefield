@@ -131,3 +131,8 @@ paper/
 *.bbl
 *.blg
 *.synctex.gz
+
+# Quarantined ML falsification lab. Lives on the orphan branch `ml-lab`, never
+# on field-validation or main. CLAUDE.md forbids neural networks in the
+# production engine; this keeps that true on the branches that ship.
+ml-lab/
