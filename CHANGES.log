@@ -299,3 +299,52 @@ Remaining manuscript gates, both human:
   - Check equations and constants against a licensed IEC copy.
   - Independent scientific, authorship and AI-disclosure review.
 No code changed. Suite unchanged at 259.
+
+2026-09-03  Rated current confirmed; the gradient offset is placement, not calibration
+============================================================================
+The DynaLoad dataset author confirmed the HV rated current is 175 A. The 132 kV
+base already in use derives 174.95 A, a 0.03 % difference, so the 0.048-0.429 pu
+load hull is confirmed rather than assumed. That upgrades the central negative
+finding -- the replication gap does not close on this record -- from an
+engineering estimate to a fact resting on the owner's own rating. It also
+disarms a trap: the voltage channel reads the LV side while the current is the
+HV winding, and an inference in private/sintef/characterise.py that the measured
+voltage identifies the winding was wrong. Corrected there.
+
+He also pushed back on our description of the winding-below-oil behaviour,
+reading "the two channels do not share a reference point" as a claim of
+calibration error, and stating he has no reason to believe an offset exists.
+He was right, and the wording invited it. What was meant was sensor HEIGHT in
+the oil column. His own data settles it: across 6,247 quasi-steady samples the
+deficit is not constant but shrinks monotonically with load and crosses zero
+inside the measured hull, from -7.06 K at 0.05-0.10 pu to +2.27 K at
+0.30-0.43 pu on Hot-spot HV. A fixed calibration offset cannot do that. Fitted C
+is 8.93-10.41 K across all four winding channels against a measured mean
+top-minus-bottom oil span of 10.37 K, and channels sitting lower in the winding
+show a larger C.
+
+New result, and the reason for the code change. On a light-load record the
+rated gradient is not identified but the CROSSING LOAD is. Sweeping the exponent
+from y = 1.0 to 2.0 moves the fitted rated gradient from 40.1 to 99.1 K, a
+factor of 2.5, while K* moves from 0.261 to 0.268 pu -- 2.7 %. The residual
+barely changes, so the record cannot even choose y. The identifiable quantity is
+the ratio C/Delta_hr = K*^y, not either parameter alone. Confirmed independently
+by the production fit, which runs a free exponent, lands at y = 0.63-0.98, and
+still returns K* = 0.261.
+
+Code:
+  - observability.GradientDatumCheck gains crossing_load_pu, and the note says
+    whether the crossing is inside the record's hull (measured) or above it
+    (extrapolated), and to prefer it to the rated gradient.
+  - The docstring now states the mechanism is height in the oil column and
+    explicitly NOT a calibration error, with the public record cited.
+Suite 259 -> 262. Three new tests: the crossing is recovered where the channels
+cross, it survives a wrong exponent where the rated gradient does not, and a
+crossing above the hull is labelled an extrapolation.
+
+Open and unexplained, recorded rather than smoothed over: if the hot-spot probes
+sit at the designed hot spot and Top oil is winding-outlet oil, C for those
+channels should be 1-2 K, not the 8.93-9.21 K fitted. Three candidates and no
+basis to choose -- the top-oil reference is hotter than the probe's local oil;
+the probes are lower than "hot spot" implies; or Delta_hr*K^y does not hold at
+0.05-0.43 pu in ONAN. One question asked; no assumption made.

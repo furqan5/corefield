@@ -389,3 +389,48 @@ def test_gradient_datum_mismatched_shapes_are_refused():
     load, oil, hot = _gradient_record()
     with pytest.raises(ValueError, match="same shape"):
         check_gradient_datum(load, oil, hot[:-1])
+
+
+def test_the_crossing_load_is_recovered_where_the_channels_actually_cross():
+    """K* is the load at which the winding overtakes the oil."""
+    load, oil, hot = _gradient_record(offset_K=11.0, rated_K=51.0, y=1.0)
+    check = check_gradient_datum(load, oil, hot)
+    # 51.0 * K**1.0 == 11.0  ->  K = 0.2157
+    assert check.crossing_load_pu == pytest.approx(11.0 / 51.0, rel=0.02)
+    # It is inside the 0.10-0.60 pu hull, so the note must say it is measured.
+    assert "INSIDE this record's load hull" in check.note
+
+
+def test_the_crossing_survives_a_wrong_exponent_where_the_rated_gradient_does_not():
+    """The identifiability claim, as a test.
+
+    On a light-load record the fitted exponent is barely constrained, so the
+    rated gradient is nearly meaningless while the crossing -- a ratio -- is
+    stable. Generating the same physical record under three different true
+    exponents must move the rated gradient far more than the crossing.
+    """
+    crossings, rateds = [], []
+    for y in (1.0, 1.6, 2.0):
+        # Hold the crossing fixed at 0.25 pu while the exponent varies:
+        # rated * 0.25**y == offset.
+        rated = 40.0
+        offset = rated * 0.25**y
+        load, oil, hot = _gradient_record(offset_K=offset, rated_K=rated, y=y)
+        check = check_gradient_datum(load, oil, hot)
+        crossings.append(check.crossing_load_pu)
+        rateds.append(check.rated_gradient_K)
+        assert check.crossing_load_pu == pytest.approx(0.25, abs=0.02)
+    assert max(crossings) - min(crossings) < 0.02
+    # The offsets that produce a fixed crossing differ by an order of
+    # magnitude across these exponents, which is exactly why the crossing is
+    # the quantity worth reporting.
+    assert max(rateds) - min(rateds) < 5.0
+
+
+def test_a_crossing_above_the_hull_is_labelled_an_extrapolation():
+    """A record where the winding never overtakes the oil must say so."""
+    # Crossing would be at 40**-1 * 30 -> 0.75 pu, above the 0.60 pu maximum.
+    load, oil, hot = _gradient_record(offset_K=30.0, rated_K=40.0, y=1.0)
+    check = check_gradient_datum(load, oil, hot)
+    assert check.crossing_load_pu > load.max()
+    assert "ABOVE this record's maximum" in check.note

@@ -661,8 +661,16 @@ class GradientDatumCheck:
     n_quasi_steady : samples the test used
     offset_K : fitted datum offset C [K], or None when not estimated. Positive
         means the winding channel reads low relative to the oil channel
-    rated_gradient_K : fitted rated gradient once the offset is allowed [K]
+    rated_gradient_K : fitted rated gradient once the offset is allowed [K].
+        An EXTRAPOLATION whenever the record stops well below 1.00 pu, and on a
+        light-load record it is barely constrained at all
     exponent : fitted winding exponent once the offset is allowed [-]
+    crossing_load_pu : the load at which the fitted gradient equals the offset,
+        so the winding channel crosses the oil channel [pu], or None when not
+        estimated. **This is the robust quantity on a light-load record.** It is
+        `(C / delta_theta_hr) ** (1 / y)`, a ratio, and unlike its three
+        ingredients it barely moves when the exponent is wrong. Trust it in
+        preference to `rated_gradient_K` whenever the hull stops short of rated
     rmse_with_offset_K, rmse_without_offset_K : residual of the two forms [K]
     note : what was found and what it means for identification
     """
@@ -673,6 +681,7 @@ class GradientDatumCheck:
     offset_K: float | None
     rated_gradient_K: float | None
     exponent: float | None
+    crossing_load_pu: float | None
     rmse_with_offset_K: float | None
     rmse_without_offset_K: float | None
     note: str
@@ -695,12 +704,22 @@ def check_gradient_datum(
     model, and fitting it anyway drives `delta_theta_hr` to a bound or absorbs
     a constant datum error into a rated parameter.
 
-    The usual cause is not a fault. Fibre probes sit at a fixed point in the
-    winding while the top-oil sensor sits at the top of the tank, and those two
-    points do not share a reference temperature. The difference behaves as a
-    roughly constant offset C, which the model has no term for:
+    The usual cause is not a fault, and specifically **it is not a calibration
+    offset**. A fibre probe sits at a fixed height inside the winding while the
+    top-oil channel is taken at the top of the oil, so the two sensors sit at
+    different heights in the same oil column and see different local oil
+    temperatures. That height difference contributes a constant C which the
+    model has no term for:
 
         measured gradient = delta_theta_hr * K**y  -  C
+
+    **(a) Confirmed on a public record.** On the SINTEF DynaLoad 40 MVA ONAN
+    dataset (Zenodo 10.5281/zenodo.17223516, CC-BY-4.0) the measured deficit is
+    not constant: it shrinks monotonically with load and crosses zero inside the
+    measured hull, which a calibration offset cannot do. Fitted C is 8.93-10.41 K
+    across four winding channels against a measured mean top-minus-bottom oil
+    span of 10.37 K, and channels known to sit lower in the winding show a larger
+    C. The quantity absorbed is the oil column, not an instrument error.
 
     Parameters
     ----------
@@ -755,7 +774,7 @@ def check_gradient_datum(
     n = int(usable.sum())
     if n == 0:
         return GradientDatumCheck(
-            False, float("nan"), 0, None, None, None, None, None,
+            False, float("nan"), 0, None, None, None, None, None, None,
             "No quasi-steady samples: the load never holds still long enough for the "
             "steady-state gradient relation to apply. NOT CHECKED.",
         )
@@ -765,14 +784,14 @@ def check_gradient_datum(
 
     if negative_fraction <= negative_fraction_threshold:
         return GradientDatumCheck(
-            False, negative_fraction, n, None, None, None, None, None,
+            False, negative_fraction, n, None, None, None, None, None, None,
             f"Consistent. {100 * negative_fraction:.1f} % of {n} quasi-steady samples "
             f"show the winding below the top oil, within the "
             f"{100 * negative_fraction_threshold:.0f} % tolerance. The two channels "
             f"appear to share a datum.",
         )
 
-    offset = rated = exponent = rmse_with = rmse_without = None
+    offset = rated = exponent = crossing = rmse_with = rmse_without = None
     if n >= min_samples:
         from scipy.optimize import least_squares
 
@@ -783,6 +802,15 @@ def check_gradient_datum(
         )
         rated, exponent, offset = (float(v) for v in with_offset.x)
         rmse_with = float(np.sqrt(np.mean(with_offset.fun**2)))
+        # The load at which the fitted gradient cancels the offset, so the
+        # winding channel crosses the oil channel. Unlike rated, exponent and
+        # offset individually, this ratio is well determined on a light-load
+        # record: it moves by a few per cent across the whole plausible
+        # exponent range, where the rated gradient moves by a factor of two or
+        # more. Only defined for a positive offset; a negative one means the
+        # winding never reads low and there is nothing to cross.
+        if offset > 0.0:
+            crossing = float((offset / rated) ** (1.0 / exponent))
 
         without = least_squares(
             lambda p: p[0] * Kq ** p[1] - gq,
@@ -799,23 +827,41 @@ def check_gradient_datum(
     )
     if offset is None:
         return GradientDatumCheck(
-            True, negative_fraction, n, None, None, None, None, None,
+            True, negative_fraction, n, None, None, None, None, None, None,
             head + f" Too few quasi-steady samples ({n} < {min_samples}) to estimate the "
                    f"offset.",
         )
 
     improved = rmse_without - rmse_with
+    if crossing is None:
+        crossing_note = ""
+    elif crossing <= float(Kq.max()):
+        crossing_note = (
+            f" The channels cross at K = {crossing:.3f} pu, which is INSIDE this "
+            f"record's load hull and is therefore measured rather than extrapolated. "
+            f"Prefer it to the rated gradient: the crossing is a ratio and survives a "
+            f"wrong exponent, while the rated gradient does not."
+        )
+    else:
+        crossing_note = (
+            f" The fit puts the crossing at K = {crossing:.3f} pu, ABOVE this record's "
+            f"maximum of {float(Kq.max()):.3f} pu, so the winding never actually "
+            f"overtakes the oil anywhere in the data and the crossing is itself an "
+            f"extrapolation."
+        )
     return GradientDatumCheck(
-        True, negative_fraction, n, offset, rated, exponent, rmse_with, rmse_without,
+        True, negative_fraction, n, offset, rated, exponent, crossing,
+        rmse_with, rmse_without,
         head
         + f" Allowing a constant datum offset C fits the same data far better: "
           f"residual {rmse_without:.2f} -> {rmse_with:.2f} K for C = {offset:.2f} K, "
           f"rated gradient {rated:.1f} K, exponent {exponent:.2f}. An offset of that "
-          f"size is the signature of a winding probe and a top-oil probe that do not "
-          f"share a reference point, which is a placement property rather than a "
-          f"fault. Identify the gradient branch from this record and the offset is "
-          f"absorbed into the rated parameter instead. The offset is reported, never "
-          f"subtracted."
+          f"size is the signature of a winding probe and a top-oil probe sitting at "
+          f"different heights in the oil column, which is a placement property and "
+          f"NOT a calibration error. Identify the gradient branch from this record "
+          f"and the offset is absorbed into the rated parameter instead. The offset "
+          f"is reported, never subtracted."
+        + crossing_note
         + (f" Note the improvement is only {improved:.2f} K, so the offset reading is "
            f"weakly supported here." if improved < 0.5 else "")
     )
