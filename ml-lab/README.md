@@ -35,27 +35,65 @@ now occupies most of this repository.
 | **E10** | do emissivity variation and reflections kill it? | not until cubic order, then absolutely |
 | **E11** | does eddy-current tank heating kill it? | no — and migration detection is immune |
 | **E12** | is the cited prior art actually prior art? | no; and the tank question is a segmentation |
+| **E5** | does a conformal bound stay honest above nameplate? | **no — 0/1000 coverage at 1.30 pu** |
 | **verification** | does the 2-D Boussinesq solver converge? | **yes**, monotonically |
 
-E2 (scarce-reference identification) is **deferred with reason** — E3 settled the ranking among
-already-rejected methods. E5 (conformal prediction) is **not yet run** and is the remaining item
-with commercial value.
+E2 (scarce-reference identification) is **deferred with reason**, on the decision owner's written
+instruction. Standalone E4 is deferred because E3 already verified its outside-hull invariant on all
+40 seed/load cells.
 
 ## The results that matter
 
-### The neural ban is confirmed, with numbers
+### No ML method demonstrated a win — but E3 is descriptive, not confirmatory
 
 Trained on 0.60–0.95 pu, evaluated outside it. Mean signed peak error:
 
 | load | classical NLS | PINN | plain NN |
 |---|---|---|---|
-| 1.00 pu | +0.66 K | **−14.42 K** | −48.63 K |
-| 1.30 pu | −0.98 K | **−45.12 K** | −79.23 K |
-| 1.60 pu | −8.48 K | **−85.89 K** | −119.50 K |
+| 1.00 pu | +0.66 K | −14.42 K | −48.63 K |
+| 1.30 pu | −0.98 K | −45.12 K | −79.23 K |
+| 1.60 pu | −8.48 K | −85.89 K | −119.50 K |
 
-Every neural failure is **unsafe-low**, and it begins 0.05 pu outside the training data. The PINN
-also never recovered physical parameters — Δθ_hr 43.7 K against a true 21.8 K — so it was neither
-accurate nor interpretable. **Quote these whenever anyone recommends a PINN.**
+> **Read this before quoting the table.** A post-run audit found **three data-construction defects**
+> in the execution that produced it — reused sensor-noise draws across records, some references
+> attached to the previous feature row, and **interpolated five-minute top-oil samples used as dense
+> two-minute PINN measurement targets**. The third corrupted the PINN's own objective, so its failure
+> is partly an artefact of a defective loss. `VERDICT.md` in the sibling repository records this run
+> as **descriptive only**. An earlier version of this README said "quote these whenever anyone
+> recommends a PINN"; **that was wrong** and is withdrawn.
+
+The defensible statement is **"no ML method has validly demonstrated a win over classical NLS
+anywhere in this harness"** — no demonstrated win, *not* proof that no win is possible. The margins
+are wide enough to **reject these candidates as an interim engineering decision** and no more. The
+production ban on neural networks is a CLAUDE.md policy decision that predates this lab and does not
+rest on it. See `FINDINGS_E5.md` §4.
+
+### A conformal band calibrated in range is silently wrong above nameplate
+
+The result with the clearest commercial consequence. A 95 % one-sided upper bound on episode peak
+hot spot, calibrated on 200 in-range episodes, margin **q = 0.374 K**, tested on 1,000 episodes per
+condition:
+
+| condition | coverage | mean (true − predicted) |
+|---|---|---|
+| 1.00 pu | 1.000 | −0.50 K |
+| 1.15 pu | 1.000 | −0.17 K |
+| **1.30 pu** | **0.000** | **+1.20 K** |
+| **1.60 pu** | **0.000** | **+8.75 K** |
+
+**Zero of 1,000 covered at 1.30 pu and above — and the reported width never changes.** It still says
+0.374 K where the error is 8.75 K, a 23× understatement with no warning. The cliff is between 1.15
+and 1.30 pu with no gradual degradation before it.
+
+**An honest loading envelope must refuse outside its calibration support, not interpolate its
+confidence.** The strict-support case does exactly that: unbounded interval, 0 % finite availability,
+reason `query_outside_calibration_hull`. That refusal is the one piece of E5 that could ship as-is.
+
+E5 also carries a **fourth defect**, found here and not previously recorded: 44.5 % of in-range
+calibration episodes have an outcome that is a constant, because a step *down* from the 0.75 pu
+opening leaves the peak at the `t = 0` equilibrium. It explains the one failed preregistered check
+(coverage 0.972, CI excluding 0.95) and it *inflates* the margin, so the extrapolation finding above
+is understated rather than overstated. Full working in `FINDINGS_E5.md` §3.
 
 ### Location is not inferable from load, ambient and top-oil
 
@@ -120,6 +158,12 @@ Each produced a confident, wrong "impossible".
 
 The pattern in all three: **a degeneracy inside the nuisances was read as location being
 unidentifiable.** Worth remembering.
+
+**A separate class: four data-construction defects.** Three in E3 (reused noise draws, misaligned
+reference timestamps, interpolated top-oil used as PINN targets) found by Codex's own post-run audit;
+one in E5 (44.5 % of in-range episodes have a load-independent outcome) found here. None was found by
+inspecting the code — each surfaced only when a number looked wrong for a reason nobody had proposed.
+The E3 three cost this repository a headline it should never have printed.
 
 ## Running it
 

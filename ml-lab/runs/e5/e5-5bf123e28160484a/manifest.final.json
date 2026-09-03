@@ -1,0 +1,34 @@
+{
+  "aggregate_sha256": "ddb977c2f836918786966394f2e58848affbe64c64ecc02c793a5c5062fc3347",
+  "completed_at_utc": "2026-09-03T02:58:24.963939Z",
+  "config_sha256": "5bf123e28160484af9d328534ef5fccf3a02d06037c8ba3f6bc1a5087e07d660",
+  "experiment": "e5",
+  "memory_gate": {
+    "headroom_bytes": 1693303808,
+    "limit_bytes": 2000000000,
+    "passed": true,
+    "peak_rss_bytes": 306696192
+  },
+  "memory_measurement": {
+    "child_peak_observation_complete": true,
+    "conservative_process_tree_upper_bound_bytes": 306696192,
+    "current_process_peak_rss_bytes": 298504192,
+    "maximum_observed_direct_child_peak_rss_bytes": 8192000,
+    "metric": "peak resident working set [bytes]",
+    "process_tree_equivalent": true,
+    "scope": "conservative current-process peak plus maximum direct-child peak",
+    "scope_note": "E2--E5 and confirmation runners spawn no experiment workers; native numerical threads share this process. Read-only Git provenance children are measured from retained OS peak counters and added conservatively. E1 can invoke a private child adapter, so its child-process peak is not captured by this field."
+  },
+  "protocol_sha256": "4e50cb8ff5de827dfc18c0206c56baa0b127f31f294aaee2f5737636c1dac4c6",
+  "repository_integrity_gate": {
+    "code_commit_unchanged": true,
+    "issues": [],
+    "passed": true,
+    "unexpected_change_count": 0
+  },
+  "run_id": "e5-5bf123e28160484a",
+  "schema_version": 1,
+  "start_manifest_sha256": "2bfd9baecdd6675bdc4b3b0034a1f0433be236374dcd8bdec43b6795e73fa8c7",
+  "status": "completed",
+  "wall_time_s": 6.964451299980283
+}

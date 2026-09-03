@@ -1,0 +1,200 @@
+{
+  "code_commit": "98dd22ca81f952bb2b595b759757e089d81a9c1e",
+  "command": [
+    "C:\\Users\\Nouman\\Desktop\\Furqan's Docs\\CoreField-ML-Lab\\.venv\\Scripts\\python.exe",
+    "-m",
+    "corefield_ml_lab",
+    "e5"
+  ],
+  "config_payload": {
+    "configuration": {
+      "alpha": 0.05,
+      "confidence_level": 0.95,
+      "episode": {
+        "duration_h": 8.0,
+        "initial_load_pu": 0.75,
+        "outcome": "maximum noise-free hot-spot temperature over full episode [degC]",
+        "prediction": "maximum fixed-NLS hot-spot temperature over full episode [degC]",
+        "step_time_h": 4.0
+      },
+      "execution_order_deviation": {
+        "e2": "deferred by decision owner after E3 neural rejection",
+        "e4": "standalone run deferred; E3 already verifies the hull-gated grey-box outside-hull invariant on every seed/load",
+        "prerequisites_for_this_run": [
+          "e1",
+          "e3"
+        ]
+      },
+      "fit": {
+        "fit_count": 1,
+        "fit_count_scope": "inside the write-once primary E5 command",
+        "physics_mode": "structural_mismatch",
+        "record": "frozen E3 train design (48 h)",
+        "record_resolution": "same E3 schedule, noise-free truth, reference locations, and NLS implementation; independent E5 seed because E3 persisted no designated reusable noisy record",
+        "reference_budget": 20,
+        "seed": 61000,
+        "sensor_noise": "corrected record-specific streams"
+      },
+      "ordinary": {
+        "calibration": {
+          "distribution": "Uniform(0.60, 0.90 pu)",
+          "episodes": 200,
+          "rng_stream": 100
+        },
+        "exchangeable_test": {
+          "distribution": "Uniform(0.60, 0.90 pu)",
+          "episodes": 1000,
+          "rng_stream": 101
+        },
+        "strict_shift_bands": [
+          {
+            "centre_pu": 1.0,
+            "episodes": 1000,
+            "lower_pu": 0.975,
+            "rng_stream": 110,
+            "upper_pu": 1.025
+          },
+          {
+            "centre_pu": 1.15,
+            "episodes": 1000,
+            "lower_pu": 1.125,
+            "rng_stream": 111,
+            "upper_pu": 1.1749999999999998
+          },
+          {
+            "centre_pu": 1.3,
+            "episodes": 1000,
+            "lower_pu": 1.2750000000000001,
+            "rng_stream": 112,
+            "upper_pu": 1.325
+          },
+          {
+            "centre_pu": 1.6,
+            "episodes": 1000,
+            "lower_pu": 1.5750000000000002,
+            "rng_stream": 113,
+            "upper_pu": 1.625
+          }
+        ]
+      },
+      "pre_primary_disclosure": {
+        "artifact_written": false,
+        "date": "2026-09-02",
+        "model_or_configuration_choice_changed": false,
+        "primary_access_claimed": false,
+        "test_covariate_exposure": "before the primary-draw guard was added, non-primary tests generated the frozen target-load draws in memory and exercised them only with a fake algebraic outcome; no thermal truth, fitted-model result, exact draw value, or artefact was observed or persisted",
+        "training_diagnostic": "training-only audit of old versus corrected seed-61000 sensor streams; no calibration/test episode loads or truth generated"
+      },
+      "quantile": "ceil((n_calibration + 1) * (1 - alpha)) higher rank",
+      "seed": 61000,
+      "weighted": {
+        "density_ratio": "Gaussian KDE q(x)/p(x), scipy Scott bandwidth",
+        "interval_weights": "estimated density ratio only; no clipping/flooring",
+        "known_ratio": "Beta(5,2) density divided by Uniform density on common mapped support",
+        "strict_support_policy": "outside observed calibration hull => target mass 1 at +infinity",
+        "target_distribution": "Beta(5,2) mapped to 0.60--0.90 pu",
+        "test_episodes": 1000,
+        "test_rng_stream": 121,
+        "unlabeled_target_episodes": 2000,
+        "unlabeled_target_rng_stream": 120
+      }
+    },
+    "experiment": "e5",
+    "prerequisite_evidence": [
+      {
+        "aggregate_sha256": "a14eb8e572672dc5e3fa1a3282a0c806887e6b8911fff390c503c7281ffa3e44",
+        "code_commit": "415a07229883af0a88bbc0665eae94a36567146c",
+        "config_sha256": "53df574b011a4dc401fadc9f7e10058d04b8856da4d937e029153de82a5f57fc",
+        "experiment": "e1",
+        "run_id": "e1-53df574b011a4dc4"
+      },
+      {
+        "aggregate_sha256": "ef42547a939d2d1dea80f70258253ee37e8c909f477fbad9585e6dc0d0ea2f65",
+        "code_commit": "bccae5081fc8c329f6d7d0b58b061818a99d9172",
+        "config_sha256": "55464d9db759b4e2cfcc4570c6fc0c21b4fa2cb782258384d866004c39c149a1",
+        "experiment": "e3",
+        "run_id": "e3-55464d9db759b4e2"
+      }
+    ],
+    "protocol_sha256": "4e50cb8ff5de827dfc18c0206c56baa0b127f31f294aaee2f5737636c1dac4c6",
+    "schema_version": 1,
+    "seeds": [
+      61000
+    ],
+    "vendor_manifest_sha256": "8cd7c1febc6f58087006ab2cb7624106385abdd19b94f0f8f0809fd016023167"
+  },
+  "config_sha256": "5bf123e28160484af9d328534ef5fccf3a02d06037c8ba3f6bc1a5087e07d660",
+  "environment": {
+    "architecture_bits": 64,
+    "captured_at_utc": "2026-09-03T02:58:17.918066Z",
+    "cpu_environment": {
+      "CUDA_VISIBLE_DEVICES": "-1",
+      "JAX_PLATFORMS": "cpu",
+      "JAX_PLATFORM_NAME": "cpu",
+      "MKL_NUM_THREADS": "1",
+      "NUMEXPR_NUM_THREADS": "1",
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1",
+      "VECLIB_MAXIMUM_THREADS": "1"
+    },
+    "logical_cpu_count": 12,
+    "machine": "AMD64",
+    "packages": [
+      {
+        "name": "corefield",
+        "version": null
+      },
+      {
+        "name": "numpy",
+        "version": "2.5.2"
+      },
+      {
+        "name": "scipy",
+        "version": "1.18.1"
+      },
+      {
+        "name": "pandas",
+        "version": "3.0.5"
+      },
+      {
+        "name": "matplotlib",
+        "version": "3.11.1"
+      },
+      {
+        "name": "pytest",
+        "version": "9.1.1"
+      },
+      {
+        "name": "torch",
+        "version": "2.14.0+cpu"
+      },
+      {
+        "name": "jax",
+        "version": null
+      },
+      {
+        "name": "jaxlib",
+        "version": null
+      },
+      {
+        "name": "scikit-learn",
+        "version": null
+      }
+    ],
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python_executable": "C:\\Users\\Nouman\\Desktop\\Furqan's Docs\\CoreField-ML-Lab\\.venv\\Scripts\\python.exe",
+    "python_implementation": "cpython",
+    "python_version": "3.14.6 (tags/v3.14.6:c63aec6, Jun 10 2026, 10:26:10) [MSC v.1944 64 bit (AMD64)]"
+  },
+  "experiment": "e5",
+  "peak_rss_at_start_bytes": 278945792,
+  "protocol_sha256": "4e50cb8ff5de827dfc18c0206c56baa0b127f31f294aaee2f5737636c1dac4c6",
+  "run_id": "e5-5bf123e28160484a",
+  "schema_version": 1,
+  "seeds": [
+    61000
+  ],
+  "started_at_utc": "2026-09-03T02:58:18.008994Z",
+  "vendor_manifest_sha256": "8cd7c1febc6f58087006ab2cb7624106385abdd19b94f0f8f0809fd016023167",
+  "was_override": false
+}
