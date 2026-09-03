@@ -33,8 +33,18 @@ from .diagnostics import (
     split_conformal_upper_limits,
     weighted_conformal_upper_limits,
 )
-from .evidence import require_completed_primary, require_e1_passed
-from .runstore import begin_primary_run, finish_primary_run, record_primary_failures
+from .evidence import (
+    evidence_provenance,
+    require_completed_primary,
+    require_e1_passed,
+)
+from .runstore import (
+    PrimaryRun,
+    begin_primary_run,
+    finish_primary_run,
+    record_primary_failures,
+    require_active_primary_run,
+)
 from .runtime import enforce_cpu_only_environment
 from .synthetic_lab import (
     Schedule,
@@ -66,6 +76,7 @@ _STREAM_EXCHANGEABLE_TEST = 101
 _STREAM_STRICT_BASE = 110
 _STREAM_UNLABELED_TARGET = 120
 _STREAM_WEIGHTED_TEST = 121
+_PRIMARY_DRAW_ACCESS = object()
 
 
 @dataclass(frozen=True, slots=True)
@@ -156,10 +167,17 @@ def e5_configuration() -> dict[str, object]:
         },
         "fit": {
             "fit_count": 1,
+            "fit_count_scope": "inside the write-once primary E5 command",
             "physics_mode": "structural_mismatch",
-            "record": "E3 train record (48 h)",
+            "record": "frozen E3 train design (48 h)",
+            "record_resolution": (
+                "same E3 schedule, noise-free truth, reference locations, and NLS "
+                "implementation; independent E5 seed because E3 persisted no "
+                "designated reusable noisy record"
+            ),
             "reference_budget": E5_REFERENCE_BUDGET,
             "seed": E5_SEED,
+            "sensor_noise": "corrected record-specific streams",
         },
         "ordinary": {
             "calibration": {
@@ -176,6 +194,30 @@ def e5_configuration() -> dict[str, object]:
         },
         "quantile": "ceil((n_calibration + 1) * (1 - alpha)) higher rank",
         "seed": E5_SEED,
+        "execution_order_deviation": {
+            "e2": "deferred by decision owner after E3 neural rejection",
+            "e4": (
+                "standalone run deferred; E3 already verifies the hull-gated "
+                "grey-box outside-hull invariant on every seed/load"
+            ),
+            "prerequisites_for_this_run": ["e1", "e3"],
+        },
+        "pre_primary_disclosure": {
+            "date": "2026-09-02",
+            "training_diagnostic": (
+                "training-only audit of old versus corrected seed-61000 sensor "
+                "streams; no calibration/test episode loads or truth generated"
+            ),
+            "test_covariate_exposure": (
+                "before the primary-draw guard was added, non-primary tests generated "
+                "the frozen target-load draws in memory and exercised them only with "
+                "a fake algebraic outcome; no thermal truth, fitted-model result, exact "
+                "draw value, or artefact was observed or persisted"
+            ),
+            "primary_access_claimed": False,
+            "artifact_written": False,
+            "model_or_configuration_choice_changed": False,
+        },
         "weighted": {
             "density_ratio": "Gaussian KDE q(x)/p(x), scipy Scott bandwidth",
             "interval_weights": "estimated density ratio only; no clipping/flooring",
@@ -196,6 +238,7 @@ def draw_e5_episode_loads(
     calibration_episodes: int = E5_CALIBRATION_EPISODES,
     test_episodes: int = E5_TEST_EPISODES,
     unlabeled_target_episodes: int = E5_UNLABELED_TARGET_EPISODES,
+    _primary_access: object | None = None,
 ) -> E5EpisodeDraws:
     """Draw independent target loads using fixed, named RNG streams.
 
@@ -211,6 +254,10 @@ def draw_e5_episode_loads(
     for name, value in counts.items():
         if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
             raise ValueError(f"{name} must be a positive integer")
+    if seed == E5_SEED and _primary_access is not _PRIMARY_DRAW_ACCESS:
+        raise RuntimeError(
+            "frozen-seed E5 draws are available only after the primary access claim"
+        )
     lower, upper = E5_IN_RANGE_SUPPORT_PU
     calibration = _rng(seed, _STREAM_CALIBRATION).uniform(
         lower, upper, size=calibration_episodes
@@ -244,6 +291,16 @@ def draw_e5_episode_loads(
         strict_test_loads_by_centre=strict,
         unlabeled_target_loads_pu=_readonly(unlabeled),
         weighted_test_loads_pu=_readonly(weighted),
+    )
+
+
+def _draw_primary_episode_loads(run: PrimaryRun) -> E5EpisodeDraws:
+    """Draw the frozen E5 covariates only from the post-sentinel runner path."""
+
+    require_active_primary_run(run, experiment="e5")
+    return draw_e5_episode_loads(
+        seed=E5_SEED,
+        _primary_access=_PRIMARY_DRAW_ACCESS,
     )
 
 
@@ -668,36 +725,15 @@ def run_e5_primary(
     repository_path = Path(repository).resolve()
     configuration = e5_configuration()
     # Local import avoids coupling the pure E5 utilities to the neural
-    # orchestrator while still enforcing the frozen E3 -> E2 -> E4 -> E5 order.
+    # orchestrator.  The decision owner explicitly deferred E2 and the
+    # standalone E4 run after the first E3 result; this deviation is hashed in
+    # the configuration above and reported rather than hidden.
     from .experiments import (
-        E2_SEEDS,
-        E3_SEEDS,
-        E4_SEEDS,
-        e2_configuration,
-        e3_configuration,
-        e4_configuration,
         _recorded_primary_command,
     )
 
-    require_e1_passed(repository_path)
-    require_completed_primary(
-        repository_path,
-        "e3",
-        required_configuration=e3_configuration(),
-        required_seeds=E3_SEEDS,
-    )
-    require_completed_primary(
-        repository_path,
-        "e2",
-        required_configuration=e2_configuration(),
-        required_seeds=E2_SEEDS,
-    )
-    require_completed_primary(
-        repository_path,
-        "e4",
-        required_configuration=e4_configuration(),
-        required_seeds=E4_SEEDS,
-    )
+    e1_evidence = require_e1_passed(repository_path)
+    e3_evidence = require_completed_primary(repository_path, "e3")
     run = begin_primary_run(
         repository_path,
         experiment="e5",
@@ -706,13 +742,17 @@ def run_e5_primary(
         command=_recorded_primary_command(
             "e5", override=override, override_reason=override_reason
         ),
+        prerequisites=[
+            evidence_provenance(e1_evidence),
+            evidence_provenance(e3_evidence),
+        ],
         override=override,
         override_reason=override_reason,
     )
 
     # The sentinel above is durable before any episode truth is generated.
     model = fit_e5_nls_once(seed=E5_SEED)
-    draws = draw_e5_episode_loads(seed=E5_SEED)
+    draws = _draw_primary_episode_loads(run)
     validate_primary_episode_draws(draws)
 
     calibration = evaluate_episode_loads(draws.calibration_loads_pu, model)

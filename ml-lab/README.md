@@ -89,11 +89,17 @@ and 1.30 pu with no gradual degradation before it.
 confidence.** The strict-support case does exactly that: unbounded interval, 0 % finite availability,
 reason `query_outside_calibration_hull`. That refusal is the one piece of E5 that could ship as-is.
 
-E5 also carries a **fourth defect**, found here and not previously recorded: 44.5 % of in-range
-calibration episodes have an outcome that is a constant, because a step *down* from the 0.75 pu
-opening leaves the peak at the `t = 0` equilibrium. It explains the one failed preregistered check
-(coverage 0.972, CI excluding 0.95) and it *inflates* the margin, so the extrapolation finding above
-is understated rather than overstated. Full working in `FINDINGS_E5.md` §3.
+E5 also carries a **fourth data-construction defect**: 44.5 % of in-range calibration episodes have
+an outcome that is a constant, because a step *down* from the 0.75 pu opening leaves the peak at the
+`t = 0` equilibrium. Both audits found the resulting atom independently and agree on the counts (89
+calibration, 464 test repeats); the mechanism, the 0.734054 pu crossover and the fix are worked out
+in `FINDINGS_E5.md` §3. It *inflates* the margin, so the extrapolation result above is understated.
+
+**The in-range case failed its preregistered check, but the check was unsuitable.** A test-set
+binomial interval is conditional on one calibration split; the registered Clopper–Pearson rule would
+pass only ~59.4 % of ideal repetitions, and the observed 972 sits inside the correct beta-binomial
+range of 913–978. E5 also ran on **one seed**, so across-calibration-seed spread is unmeasured.
+Neither qualification touches the 0/2000 extrapolation result. See `FINDINGS_E5.md` §3.3.
 
 ### Location is not inferable from load, ambient and top-oil
 
@@ -176,7 +182,11 @@ described in `PREREGISTRATION.md`, which was frozen before any model was written
 protocol, seeds, gates and stopping rules.
 
 `vendor/` holds a read-only copy of the production package as the baseline under test. Nothing here
-is ever imported back into it.
+is ever imported back into it. `pytest` from the lab root runs **149 tests**.
+
+`RESULTS.md`, `VERDICT.md` and `report-source.md` are the preregistered §12 outputs: predicted versus
+observed for every run, the adopt/investigate/reject decisions, and the claim-to-source ledger. Read
+`VERDICT.md` first if you only want the answer.
 
 **Git note:** this repository was created by a sandboxed agent account. If git reports "dubious
 ownership":

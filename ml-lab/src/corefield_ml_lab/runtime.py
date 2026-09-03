@@ -369,6 +369,7 @@ def claim_primary_test_access(
     seed: int,
     override: bool = False,
     override_reason: str | None = None,
+    override_predecessor_run_id: str | None = None,
     now_utc: datetime | None = None,
 ) -> PrimaryTestClaim:
     """Atomically claim the write-once primary-test sentinel.
@@ -383,6 +384,8 @@ def claim_primary_test_access(
     clean_run_id = run_id.strip()
     if not clean_run_id:
         raise ValueError("run_id must not be empty")
+    if not override and override_predecessor_run_id is not None:
+        raise ValueError("override_predecessor_run_id requires override=True")
 
     sentinel = Path(sentinel_path)
     sentinel.parent.mkdir(parents=True, exist_ok=True)
@@ -398,6 +401,8 @@ def claim_primary_test_access(
         with sentinel.open("x", encoding="utf-8", newline="\n") as stream:
             json.dump(first_payload, stream, indent=2, sort_keys=True)
             stream.write("\n")
+            stream.flush()
+            os.fsync(stream.fileno())
     except FileExistsError as error:
         if not override:
             raise PrimaryTestAlreadyClaimedError(
@@ -421,6 +426,30 @@ def claim_primary_test_access(
             raise RuntimeError("existing primary-test sentinel has no predecessor run_id")
 
         log_path = primary_test_override_log_path(sentinel)
+        if log_path.exists():
+            try:
+                prior_lines = log_path.read_text(encoding="utf-8").splitlines()
+            except (OSError, UnicodeError) as read_error:
+                raise RuntimeError("existing override log is not readable") from read_error
+            for line in prior_lines:
+                try:
+                    prior_entry = json.loads(line)
+                except json.JSONDecodeError as read_error:
+                    raise RuntimeError("existing override log is not valid JSONL") from read_error
+                if not isinstance(prior_entry, dict):
+                    raise RuntimeError("existing override log entry is not an object")
+                if prior_entry.get("predecessor_run_id") != predecessor_run_id:
+                    raise RuntimeError("existing override log predecessor chain is broken")
+                next_run_id = prior_entry.get("run_id")
+                if not isinstance(next_run_id, str) or not next_run_id:
+                    raise RuntimeError("existing override log entry has no run_id")
+                predecessor_run_id = next_run_id
+        if override_predecessor_run_id is not None:
+            requested_predecessor = override_predecessor_run_id.strip()
+            if not requested_predecessor or requested_predecessor != predecessor_run_id:
+                raise RuntimeError(
+                    "override predecessor does not match the latest audited claim"
+                )
         override_payload = {
             "claimed_at_utc": claimed_at,
             "predecessor_run_id": predecessor_run_id,
@@ -432,6 +461,8 @@ def claim_primary_test_access(
         }
         with log_path.open("a", encoding="utf-8", newline="\n") as stream:
             stream.write(json.dumps(override_payload, sort_keys=True) + "\n")
+            stream.flush()
+            os.fsync(stream.fileno())
         LOGGER.warning(
             "Primary-test access override logged for run_id=%s at %s: %s",
             clean_run_id,
@@ -479,8 +510,8 @@ def sha256_file(
     return digest.hexdigest()
 
 
-def _windows_peak_rss_bytes() -> int:
-    """Read Windows ``PeakWorkingSetSize`` for the current process in bytes."""
+def _windows_peak_rss_bytes(process_handle: int | None = None) -> int:
+    """Read Windows ``PeakWorkingSetSize`` for one open process handle."""
 
     from ctypes import wintypes
 
@@ -515,9 +546,12 @@ def _windows_peak_rss_bytes() -> int:
 
     counters = ProcessMemoryCountersEx()
     counters.cb = ctypes.sizeof(counters)
-    if not get_process_memory_info(
-        get_current_process(), ctypes.byref(counters), counters.cb
-    ):
+    handle = (
+        get_current_process()
+        if process_handle is None
+        else wintypes.HANDLE(process_handle)
+    )
+    if not get_process_memory_info(handle, ctypes.byref(counters), counters.cb):
         error_code = ctypes.get_last_error()
         raise OSError(error_code, "GetProcessMemoryInfo failed")
     return int(counters.PeakWorkingSetSize)
@@ -537,6 +571,30 @@ def process_peak_rss_bytes() -> int:
     import resource
 
     maximum_rss = int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
+    return maximum_rss if sys.platform == "darwin" else maximum_rss * 1024
+
+
+def completed_child_peak_rss_bytes(process: Any) -> int:
+    """Return a conservative peak RSS for a completed direct child process.
+
+    On Windows, ``subprocess.Popen`` retains an open process handle after
+    ``communicate`` and the kernel preserves ``PeakWorkingSetSize`` until that
+    handle closes.  POSIX exposes the maximum terminated-child RSS through
+    ``RUSAGE_CHILDREN``; it can include earlier children and is therefore a
+    conservative bound for the current one.
+    """
+
+    if getattr(process, "returncode", None) is None:
+        raise ValueError("child process must be complete before reading peak RSS")
+    if sys.platform == "win32":
+        handle = getattr(process, "_handle", None)
+        if handle is None:
+            raise OSError("completed child process has no retained Windows handle")
+        return _windows_peak_rss_bytes(int(handle))
+
+    import resource
+
+    maximum_rss = int(resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss)
     return maximum_rss if sys.platform == "darwin" else maximum_rss * 1024
 
 
@@ -597,6 +655,7 @@ __all__ = [
     "SeedRecord",
     "TorchDeviceStatus",
     "capture_environment",
+    "completed_child_peak_rss_bytes",
     "claim_primary_test_access",
     "enforce_cpu_only_environment",
     "evaluate_peak_rss_gate",

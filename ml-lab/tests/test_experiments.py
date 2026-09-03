@@ -51,12 +51,12 @@ def test_e4_configuration_fixes_hard_gate_and_effect_size() -> None:
 
 def test_recorded_override_command_retains_reason_and_rejects_ambiguous_use() -> None:
     command = _recorded_primary_command(
-        "e3", override=True, override_reason="documented infrastructure failure"
+        "e3", override=True, override_reason="Infrastructure failure: documented"
     )
     assert command[-3:] == [
         "--override",
         "--override-reason",
-        "documented infrastructure failure",
+        "Infrastructure failure: documented",
     ]
     with pytest.raises(ValueError, match="required"):
         _recorded_primary_command("e3", override=True, override_reason=None)

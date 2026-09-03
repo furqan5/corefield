@@ -61,10 +61,20 @@ preregistered prediction — 100 % containment achieved only through useless int
 implementation refuses rather than clipping weights into a finite pseudo-guarantee, which is the
 honest behaviour and is the one thing here that could go straight into the product.
 
-## 3. A fourth data-construction defect, not previously recorded
+## 3. A fourth data-construction defect — the mechanism behind an atom both audits found
 
-Codex's own post-run audit named three defects in E3 (see §4). **This is a fourth, in E5's episode
-generator, found here and not documented in `RESULTS.md`, `VERDICT.md` or the run artefact.**
+**Reconciled 3 September 2026 against the sealed `RESULTS.md` (commit `6e070c6`).** An earlier
+version of this section claimed the finding was undocumented on Codex's side. That is no longer
+accurate and the claim is withdrawn: `RESULTS.md` §"Continuity caveat" independently records the
+same tie counts — *"only 112/200 calibration scores are unique: score 0.243396 K repeats 89 times,
+and the corresponding exchangeable-test atom repeats 464/1,000 times."* Those are exactly the numbers
+derived here, reached by a different route, which is a useful cross-check on both.
+
+**What remains new here is the cause, not the symptom.** Codex records *that* the score distribution
+has a large atom and correctly draws the statistical consequence — the continuous Beta law does not
+apply. It does not identify *why* the atom exists. The mechanism below, the crossover load, and the
+protocol fix in §3.2 are the contribution; they turn a distributional caveat into a design defect
+with a known remedy.
 
 An episode is 4 h at 0.75 pu followed by 4 h at the sampled target, and its outcome is the maximum
 hot-spot temperature. The record opens at the settled 0.75 pu equilibrium. **So whenever the target
@@ -106,10 +116,39 @@ to cover a single one of 2,000 episodes at 1.30 and 1.60 pu was the *inflated* o
 is tighter and would fail at least as badly. The defect damages the in-range calibration claim, not
 the extrapolation finding.
 
-**What must be fixed before E5 is quoted as confirmatory.** The episode design must make the outcome
-depend on the sampled load — an opening segment below the support (`0.55 pu` or lower), or scoring
-the target plateau rather than the whole record, as E3 already does with its `time_s >= 14400`
-window. Either is a protocol change and needs its own frozen re-run.
+### 3.2 What must be fixed before E5 is quoted as confirmatory
+
+The episode design must make the outcome depend on the sampled load — an opening segment below the
+support (`0.55 pu` or lower), or scoring the target plateau rather than the whole record, as E3
+already does with its `time_s >= 14400` window. Either is a protocol change and needs its own frozen
+re-run.
+
+## 3.3 Two further limits Codex recorded, and both weaken the failed check further
+
+**The preregistered check was itself mis-specified.** `RESULTS.md` shows that under a
+continuous-iid-score idealisation the registered order statistic targets `191/201 = 95.025 %`, while
+coverage at a *fixed* calibration set is `Beta(191,10)` — SD 1.53 points, central 95 % range
+`91.63–97.58 %`. Folding in 1,000 test draws gives a beta-binomial central range of `913–978` covered
+rows. **The observed 972 sits inside that range.** The preregistered Clopper–Pearson rule would have
+accepted only `936–963` and would pass only about **59.4 %** of ideal repetitions.
+
+**(c) So "the exchangeable case failed its preregistered check" is a much weaker statement than it
+sounds, and should not be repeated without this qualification.** A test-set binomial interval is
+conditional on one realised calibration split and does not have to contain the repeated-calibration
+marginal target. The failure is recorded unchanged — correctly, because the protocol was frozen — but
+it is evidence about the checksum, not about the conformal implementation. The atom in §3 and the
+mis-specified check are **two independent reasons** the same number came out high.
+
+**One seed, not ten.** E5 used the frozen seed `61000` alone. §3.2 of the preregistration demands at
+least ten seeds per stochastic cell while §3.2 also names a single E5 seed — the protocol contradicts
+itself, and Codex flagged it rather than papering over it. **Across-calibration-seed variability is
+therefore unmeasured**, and no post-access rerun was performed. This matters here specifically: a
+different seed draws a different mix of degenerate episodes, so the 0.374 K margin is one realisation
+of a quantity whose spread nobody has measured.
+
+**(c) None of this touches the §1 headline.** Zero coverage of 2,000 episodes at 1.30 and 1.60 pu is
+not a marginal-coverage subtlety and not a seed effect. Every episode in both bands exceeded its
+upper limit.
 
 ## 4. E3 is superseded — the numbers this repository was quoting are descriptive only
 
@@ -161,11 +200,19 @@ of the artefact alone would not know that.
 
 | case | preregistered prediction | outcome |
 |---|---|---|
-| exchangeable in-range | exact CI contains 0.95 | **failed** — 0.972, CI [0.960, 0.981]; cause identified in §3 |
+| exchangeable in-range | exact CI contains 0.95 | **failed literally** — 0.972, CI [0.960, 0.981]. Two independent causes: the degenerate atom (§3) and a mis-specified check (§3.3) |
 | strict shift | under-covers, worsening with load | **confirmed, and worse than predicted** — 0/1000 at 1.30 and 1.60 pu |
 | weighted overlapping | finite width, report ESS | **confirmed** — 0.961 coverage, ESS 110.6/200 |
 | weighted strict support | unbounded only, 0 % finite | **confirmed exactly** — availability 0.000 |
 
+Verification passed on the sealed run: **149 tests**, strict hash and prerequisite-lineage checks, no
+override, 6.9645 s, conservative process-tree bound 306,696,192 B against the 2 GB gate.
+
 **E5 verdict: adopt the refusal behaviour, reject the bound outside the hull.** The one genuinely
 shippable finding is that a conformal band must return *unbounded* outside its calibration support
 rather than a number. Everything else here is a warning about what not to sell.
+
+**(c) And note which way the evidence runs.** Three of the four cases confirmed their preregistered
+predictions, and the fourth failed a check that was itself unsuitable. The lab's value was never the
+pass rate — it is that the one case with commercial consequence failed as badly as it is possible to
+fail, and would have been invisible to anyone who only looked at the reported interval width.

@@ -197,14 +197,14 @@ def test_recorded_confirmation_command_contains_exact_trigger_and_override() -> 
         trigger,
         prior_run_id="e3-source",
         override=True,
-        override_reason="documented confirmation infrastructure failure",
+        override_reason="Infrastructure failure: documented confirmation failure",
     )
     assert command[3:5] == ["confirmation", "e3"]
     assert command[command.index("--target-load") + 1] == "1.30"
     assert command[command.index("--prior-run-id") + 1] == "e3-source"
     assert command[-2:] == [
         "--override-reason",
-        "documented confirmation infrastructure failure",
+        "Infrastructure failure: documented confirmation failure",
     ]
 
 

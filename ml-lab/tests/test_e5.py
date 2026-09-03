@@ -24,28 +24,54 @@ def _model() -> NLSModel:
     )
 
 
+def _primary_draw_fixture() -> e5.E5EpisodeDraws:
+    calibration = np.linspace(0.6001, 0.8999, 200, dtype=np.float64)
+    exchangeable = np.linspace(0.8998, 0.6002, 1_000, dtype=np.float64)
+    strict = tuple(
+        (centre, np.full(1_000, centre, dtype=np.float64))
+        for centre in e5.E5_STRICT_CENTRES_PU
+    )
+    return e5.E5EpisodeDraws(
+        calibration_loads_pu=calibration,
+        exchangeable_test_loads_pu=exchangeable,
+        strict_test_loads_by_centre=strict,
+        unlabeled_target_loads_pu=np.linspace(0.6501, 0.8990, 2_000),
+        weighted_test_loads_pu=np.linspace(0.6502, 0.8989, 1_000),
+    )
+
+
 def test_configuration_resolves_every_preregistered_count_and_band() -> None:
     config = e5.e5_configuration()
 
     assert config["alpha"] == 0.05
     assert config["fit"]["fit_count"] == 1
+    assert config["fit"]["fit_count_scope"] == (
+        "inside the write-once primary E5 command"
+    )
     assert config["fit"]["reference_budget"] == 20
     assert config["fit"]["seed"] == 61_000
+    assert config["fit"]["sensor_noise"] == "corrected record-specific streams"
     assert config["ordinary"]["calibration"]["episodes"] == 200
     assert config["ordinary"]["exchangeable_test"]["episodes"] == 1_000
     bands = config["ordinary"]["strict_shift_bands"]
     assert [band["centre_pu"] for band in bands] == [1.0, 1.15, 1.3, 1.6]
     assert all(band["upper_pu"] - band["lower_pu"] == pytest.approx(0.05) for band in bands)
     assert config["weighted"]["unlabeled_target_episodes"] == 2_000
+    disclosure = config["pre_primary_disclosure"]
+    assert disclosure["primary_access_claimed"] is False
+    assert disclosure["artifact_written"] is False
+    assert disclosure["model_or_configuration_choice_changed"] is False
 
 
 def test_episode_draws_are_deterministic_independent_streams_and_in_support() -> None:
     first = e5.draw_e5_episode_loads(
+        seed=12_345,
         calibration_episodes=12,
         test_episodes=15,
         unlabeled_target_episodes=20,
     )
     second = e5.draw_e5_episode_loads(
+        seed=12_345,
         calibration_episodes=12,
         test_episodes=15,
         unlabeled_target_episodes=20,
@@ -67,7 +93,10 @@ def test_episode_draws_are_deterministic_independent_streams_and_in_support() ->
 
 
 def test_primary_draw_validation_checks_every_frozen_support_and_finiteness() -> None:
-    draws = e5.draw_e5_episode_loads()
+    with pytest.raises(RuntimeError, match="only after the primary access claim"):
+        e5.draw_e5_episode_loads()
+
+    draws = _primary_draw_fixture()
     e5.validate_primary_episode_draws(draws)
 
     calibration = draws.calibration_loads_pu.copy()
@@ -109,7 +138,7 @@ def test_primary_draw_validation_checks_every_frozen_support_and_finiteness() ->
 
 
 def test_primary_draw_validation_rejects_nonvector_even_with_correct_count() -> None:
-    draws = e5.draw_e5_episode_loads()
+    draws = _primary_draw_fixture()
     reshaped = draws.calibration_loads_pu.reshape(20, 10)
     with pytest.raises(RuntimeError, match="shape/count"):
         e5.validate_primary_episode_draws(
@@ -300,11 +329,18 @@ def test_primary_runner_reaches_prerequisites_then_write_once_claim(
     events: list[str] = []
 
     monkeypatch.setattr(e5, "enforce_cpu_only_environment", lambda: events.append("cpu"))
-    monkeypatch.setattr(e5, "require_e1_passed", lambda root: events.append("e1"))
+    def require_e1(root):
+        events.append("e1")
+        return "e1-evidence"
+
+    monkeypatch.setattr(e5, "require_e1_passed", require_e1)
     monkeypatch.setattr(
         e5,
         "require_completed_primary",
-        lambda *args, **kwargs: events.append(str(args[1])),
+        lambda *args, **kwargs: events.append(str(args[1])) or "e3-evidence",
+    )
+    monkeypatch.setattr(
+        e5, "evidence_provenance", lambda record: {"record": str(record)}
     )
 
     class ReachedClaim(RuntimeError):
@@ -315,12 +351,16 @@ def test_primary_runner_reaches_prerequisites_then_write_once_claim(
         assert kwargs["experiment"] == "e5"
         assert kwargs["seeds"] == [61_000]
         assert kwargs["command"][-1] == "e5"
+        assert kwargs["prerequisites"] == [
+            {"record": "e1-evidence"},
+            {"record": "e3-evidence"},
+        ]
         raise ReachedClaim
 
     monkeypatch.setattr(e5, "begin_primary_run", begin)
     with pytest.raises(ReachedClaim):
         e5.run_e5_primary(tmp_path)
-    assert events == ["cpu", "e1", "e3", "e2", "e4", "claim"]
+    assert events == ["cpu", "e1", "e3", "claim"]
 
 
 def test_primary_runner_executes_one_fit_and_full_preregistered_episode_counts(
@@ -329,6 +369,7 @@ def test_primary_runner_executes_one_fit_and_full_preregistered_episode_counts(
 ) -> None:
     monkeypatch.setattr(e5, "require_e1_passed", lambda root: None)
     monkeypatch.setattr(e5, "require_completed_primary", lambda *args, **kwargs: None)
+    monkeypatch.setattr(e5, "evidence_provenance", lambda record: {"record": "mock"})
     monkeypatch.setattr(
         e5,
         "begin_primary_run",
@@ -358,6 +399,9 @@ def test_primary_runner_executes_one_fit_and_full_preregistered_episode_counts(
         return {"status": "completed"}
 
     monkeypatch.setattr(e5, "fit_e5_nls_once", fit_once)
+    monkeypatch.setattr(
+        e5, "_draw_primary_episode_loads", lambda run: _primary_draw_fixture()
+    )
     monkeypatch.setattr(e5, "evaluate_episode_loads", evaluate)
     monkeypatch.setattr(e5, "finish_primary_run", finish)
     result = e5.run_e5_primary(tmp_path)

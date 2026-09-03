@@ -185,7 +185,7 @@ def test_primary_test_sentinel_is_write_once_and_override_is_audited(
             run_id="second",
             seed=12,
             override=True,
-            override_reason="independent audit rerun",
+            override_reason="Infrastructure failure: independent audit rerun",
             now_utc=FIXED_TIME,
         )
 
@@ -194,7 +194,24 @@ def test_primary_test_sentinel_is_write_once_and_override_is_audited(
     assert claim.override_log_path is not None
     entries = claim.override_log_path.read_text(encoding="utf-8").splitlines()
     assert len(entries) == 1
-    assert json.loads(entries[0])["reason"] == "independent audit rerun"
+    payload = json.loads(entries[0])
+    assert payload["reason"] == "Infrastructure failure: independent audit rerun"
+    assert payload["predecessor_run_id"] == "first"
+    assert len(payload["predecessor_sentinel_sha256"]) == 64
+
+    third = runtime.claim_primary_test_access(
+        sentinel,
+        run_id="third",
+        seed=12,
+        override=True,
+        override_reason="Infrastructure failure: second audited rerun",
+        override_predecessor_run_id="second",
+        now_utc=FIXED_TIME,
+    )
+    assert third.was_override
+    chained = third.override_log_path.read_text(encoding="utf-8").splitlines()
+    assert len(chained) == 2
+    assert json.loads(chained[1])["predecessor_run_id"] == "second"
     assert "Primary-test access override logged" in caplog.text
 
 

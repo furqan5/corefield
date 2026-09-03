@@ -11,6 +11,7 @@ import json
 from numbers import Integral
 import os
 from pathlib import Path
+import re
 import subprocess
 import time
 from typing import Callable, Mapping, Sequence, TypeVar
@@ -20,14 +21,22 @@ from .runtime import (
     PEAK_RSS_LIMIT_BYTES,
     capture_environment,
     claim_primary_test_access,
+    completed_child_peak_rss_bytes,
     evaluate_peak_rss_gate,
     process_peak_rss_bytes,
+    primary_test_override_log_path,
     sha256_file,
 )
 
 
 SCHEMA_VERSION = 1
 _ACTIVE_PRIMARY_RUN: ContextVar[PrimaryRun | None]  # assigned after class definition
+_OBSERVED_CHILD_PEAK_RSS_BYTES: ContextVar[int] = ContextVar(
+    "corefield_ml_lab_observed_child_peak_rss_bytes", default=0
+)
+_CHILD_PEAK_OBSERVATION_COMPLETE: ContextVar[bool] = ContextVar(
+    "corefield_ml_lab_child_peak_observation_complete", default=True
+)
 _ReturnT = TypeVar("_ReturnT")
 
 
@@ -72,17 +81,40 @@ def write_json_exclusive(path: Path, payload: object) -> None:
         os.fsync(stream.fileno())
 
 
-def git_head(repository: Path) -> str:
-    """Resolve the current commit without mutating Git state."""
+def _run_git(repository: Path, arguments: Sequence[str]) -> subprocess.CompletedProcess[str]:
+    """Run one read-only Git command and retain a conservative child-RSS peak."""
 
-    completed = subprocess.run(
-        ["git", "rev-parse", "HEAD"],
+    process = subprocess.Popen(
+        ["git", *arguments],
         cwd=repository,
-        check=True,
-        capture_output=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
         text=True,
         encoding="utf-8",
     )
+    stdout, stderr = process.communicate()
+    try:
+        child_peak = completed_child_peak_rss_bytes(process)
+    except (OSError, RuntimeError, TypeError, ValueError):
+        _CHILD_PEAK_OBSERVATION_COMPLETE.set(False)
+    else:
+        _OBSERVED_CHILD_PEAK_RSS_BYTES.set(
+            max(_OBSERVED_CHILD_PEAK_RSS_BYTES.get(), child_peak)
+        )
+    completed = subprocess.CompletedProcess(
+        process.args,
+        process.returncode,
+        stdout=stdout,
+        stderr=stderr,
+    )
+    completed.check_returncode()
+    return completed
+
+
+def git_head(repository: Path) -> str:
+    """Resolve the current commit without mutating Git state."""
+
+    completed = _run_git(repository, ["rev-parse", "HEAD"])
     value = completed.stdout.strip()
     if len(value) != 40:
         raise RuntimeError(f"unexpected Git HEAD value: {value!r}")
@@ -92,13 +124,9 @@ def git_head(repository: Path) -> str:
 def git_status_porcelain(repository: Path) -> tuple[str, ...]:
     """Return every tracked or untracked worktree change without mutation."""
 
-    completed = subprocess.run(
-        ["git", "status", "--porcelain=v1", "--untracked-files=all"],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
+    completed = _run_git(
+        repository,
+        ["status", "--porcelain=v1", "--untracked-files=all"],
     )
     return tuple(line for line in completed.stdout.splitlines() if line)
 
@@ -106,14 +134,7 @@ def git_status_porcelain(repository: Path) -> tuple[str, ...]:
 def require_clean_worktree(repository: Path) -> None:
     """Refuse a primary claim unless its complete code/evidence state is committed."""
 
-    completed = subprocess.run(
-        ["git", "rev-parse", "--show-toplevel"],
-        cwd=repository,
-        check=True,
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-    )
+    completed = _run_git(repository, ["rev-parse", "--show-toplevel"])
     top_level = Path(completed.stdout.strip()).resolve()
     if os.path.normcase(str(top_level)) != os.path.normcase(str(repository.resolve())):
         raise RuntimeError(
@@ -148,6 +169,15 @@ class PrimaryRun:
 
 
 _ACTIVE_PRIMARY_RUN = ContextVar("corefield_ml_lab_active_primary_run", default=None)
+
+
+def require_active_primary_run(run: PrimaryRun, *, experiment: str) -> None:
+    """Require the exact post-sentinel run handle in the current execution context."""
+
+    if _ACTIVE_PRIMARY_RUN.get() is not run or run.experiment != experiment:
+        raise RuntimeError(
+            f"{experiment} primary data require the active post-sentinel run handle"
+        )
 
 
 def record_primary_failures(
@@ -295,6 +325,8 @@ def begin_primary_run(
                 "override_reason must begin with "
                 f"{INFRASTRUCTURE_OVERRIDE_PREFIX!r}"
             )
+    _OBSERVED_CHILD_PEAK_RSS_BYTES.set(0)
+    _CHILD_PEAK_OBSERVATION_COMPLETE.set(True)
     require_clean_worktree(root)
     # Resolve every subprocess-backed provenance field before the access
     # claim.  E2--E5 then run in one Python process, so their process tree is
@@ -304,19 +336,75 @@ def begin_primary_run(
     peak_start = process_peak_rss_bytes()
 
     run_id = base_run_id
-    base_run_directory = root / "runs" / clean_experiment / base_run_id
-    if base_run_directory.exists():
-        if not override:
-            raise FileExistsError(
-                f"primary run directory already exists without an override: {base_run_directory}"
+    override_predecessor_run_id: str | None = None
+    experiment_directory = root / "runs" / clean_experiment
+    base_run_directory = experiment_directory / base_run_id
+    if not override and base_run_directory.exists():
+        raise FileExistsError(
+            f"primary run directory already exists without an override: {base_run_directory}"
+        )
+    if override:
+        try:
+            sentinel_payload = json.loads(sentinel_path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError, json.JSONDecodeError) as error:
+            raise RuntimeError("cannot validate the existing access sentinel") from error
+        original_run_id = sentinel_payload.get("run_id")
+        if original_run_id != base_run_id:
+            raise RuntimeError(
+                "primary-test override must use the exact configuration, seeds, "
+                "protocol, vendor evidence, and prerequisite lineage of the original claim"
             )
-        final_path = base_run_directory / "manifest.final.json"
-        if final_path.is_file():
+
+        claimed_run_ids = [base_run_id]
+        override_log = primary_test_override_log_path(sentinel_path)
+        if override_log.exists():
+            try:
+                log_lines = override_log.read_text(encoding="utf-8").splitlines()
+            except (OSError, UnicodeError) as error:
+                raise RuntimeError("cannot validate the existing override log") from error
+            predecessor = base_run_id
+            for attempt_number, line in enumerate(log_lines, start=2):
+                try:
+                    entry = json.loads(line)
+                except json.JSONDecodeError as error:
+                    raise RuntimeError("existing override log is not valid JSONL") from error
+                expected_run_id = f"{base_run_id}-attempt{attempt_number:02d}"
+                if not isinstance(entry, dict) or (
+                    entry.get("predecessor_run_id") != predecessor
+                    or entry.get("run_id") != expected_run_id
+                ):
+                    raise RuntimeError(
+                        "existing override log is not a sequential same-configuration chain"
+                    )
+                predecessor = expected_run_id
+                claimed_run_ids.append(expected_run_id)
+
+        if experiment_directory.is_dir():
+            exact_pattern = re.compile(
+                rf"^{re.escape(base_run_id)}(?:-attempt[0-9]{{2,}})?$"
+            )
+            unclaimed_directories = sorted(
+                path.name
+                for path in experiment_directory.iterdir()
+                if path.is_dir()
+                and exact_pattern.fullmatch(path.name)
+                and path.name not in claimed_run_ids
+            )
+            if unclaimed_directories:
+                raise RuntimeError(
+                    "same-configuration run directories lack matching access claims: "
+                    + ", ".join(unclaimed_directories)
+                )
+
+        for claimed_run_id in claimed_run_ids:
+            final_path = experiment_directory / claimed_run_id / "manifest.final.json"
+            if not final_path.exists():
+                continue
             try:
                 prior_final = json.loads(final_path.read_text(encoding="utf-8"))
             except (OSError, UnicodeError, json.JSONDecodeError) as error:
                 raise RuntimeError(
-                    "cannot validate the prior same-configuration final manifest"
+                    "cannot validate a prior same-configuration final manifest"
                 ) from error
             prior_memory = prior_final.get("memory_gate")
             prior_passed = (
@@ -328,19 +416,16 @@ def begin_primary_run(
                     "a completed, memory-passing run already exists for this exact "
                     "configuration; an override may not repeat it"
                 )
-        attempt = 2
-        while True:
-            candidate = f"{base_run_id}-attempt{attempt:02d}"
-            if not (root / "runs" / clean_experiment / candidate).exists():
-                run_id = candidate
-                break
-            attempt += 1
+
+        override_predecessor_run_id = claimed_run_ids[-1]
+        run_id = f"{base_run_id}-attempt{len(claimed_run_ids) + 1:02d}"
     claim = claim_primary_test_access(
         sentinel_path,
         run_id=run_id,
         seed=seed_tuple[0],
         override=override,
         override_reason=override_reason,
+        override_predecessor_run_id=override_predecessor_run_id,
     )
     run_directory = root / "runs" / clean_experiment / run_id
     start_payload = {
@@ -438,14 +523,27 @@ def finish_primary_run(
         raise ValueError("status must be 'completed' or 'failed'")
     aggregate_path = run.run_directory / "aggregate.json"
     write_json_exclusive(aggregate_path, dict(aggregate_payload))
-    peak = process_peak_rss_bytes()
-    memory = evaluate_peak_rss_gate(peak, limit_bytes=PEAK_RSS_LIMIT_BYTES)
     repository_integrity = _repository_integrity_at_finish(run)
+    parent_peak = process_peak_rss_bytes()
+    child_peak = _OBSERVED_CHILD_PEAK_RSS_BYTES.get()
+    child_observation_complete = _CHILD_PEAK_OBSERVATION_COMPLETE.get()
+    process_tree_upper_bound_available = bool(
+        run.experiment != "e1" and child_observation_complete
+    )
+    measured_peak = (
+        parent_peak + child_peak
+        if process_tree_upper_bound_available
+        else parent_peak
+    )
+    memory = evaluate_peak_rss_gate(
+        measured_peak, limit_bytes=PEAK_RSS_LIMIT_BYTES
+    )
     effective_status = (
         "completed"
         if requested_status == "completed"
         and memory.passed
         and repository_integrity["passed"] is True
+        and (run.experiment == "e1" or process_tree_upper_bound_available)
         else "failed"
     )
     final_payload: dict[str, object] = {
@@ -455,11 +553,22 @@ def finish_primary_run(
         "experiment": run.experiment,
         "memory_gate": asdict(memory),
         "memory_measurement": {
+            "child_peak_observation_complete": child_observation_complete,
+            "conservative_process_tree_upper_bound_bytes": (
+                measured_peak if process_tree_upper_bound_available else None
+            ),
+            "current_process_peak_rss_bytes": parent_peak,
+            "maximum_observed_direct_child_peak_rss_bytes": child_peak,
             "metric": "peak resident working set [bytes]",
-            "process_tree_equivalent": run.experiment != "e1",
-            "scope": "current Python process",
+            "process_tree_equivalent": process_tree_upper_bound_available,
+            "scope": (
+                "conservative current-process peak plus maximum direct-child peak"
+                if process_tree_upper_bound_available
+                else "current Python process only"
+            ),
             "scope_note": (
-                "E2--E5 and confirmation runners spawn no child workers; native numerical threads share this process. "
+                "E2--E5 and confirmation runners spawn no experiment workers; native numerical threads share this process. "
+                "Read-only Git provenance children are measured from retained OS peak counters and added conservatively. "
                 "E1 can invoke a private child adapter, so its child-process peak is not captured by this field."
             ),
         },
@@ -483,6 +592,8 @@ def finish_primary_run(
         )
     if repository_integrity["passed"] is not True:
         raise RuntimeError("repository integrity gate failed during the primary run")
+    if run.experiment != "e1" and not process_tree_upper_bound_available:
+        raise RuntimeError("process-tree peak RSS could not be verified")
     return final_payload
 
 
@@ -495,6 +606,7 @@ __all__ = [
     "git_head",
     "git_status_porcelain",
     "record_primary_failures",
+    "require_active_primary_run",
     "require_clean_worktree",
     "write_json_exclusive",
 ]
