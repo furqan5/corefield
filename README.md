@@ -23,15 +23,16 @@ models for a transmission operator; the earlier "replaces the heat-run test" was
 
 > ## ⚠ TWO THINGS TO READ BEFORE ANYTHING ELSE
 >
-> **1. IEC 60076-7 provenance.** The two-exponential structure and the ONAF constants were
-> checked against the published text of IEC 60076-7:2018 Edition 2.0 on 25 Aug 2026 and **match
-> it** — all five cooling-class constants, both tabulated time constants, and the assignment of
-> each time constant to its branch. Three numerical checks in `corefield.verification` confirm
-> that assignment independently of any document.
+> **1. Provenance: no standards-conformity claim.** The equation structure is the two-exponential
+> IEC loading-guide model as written out in the peer-reviewed, open-access paper by
+> González-Cagigal, Rosendo-Macías and Gómez-Expósito, *J. Mod. Power Syst. Clean Energy*
+> 11(2):634–642, 2023, eqs. (20)–(23). The cooling-class constants are engineering assumptions,
+> UNVERIFIED against the standard itself. Three numerical checks in `corefield.verification`
+> confirm the branch assignment; they do not verify the constants.
 >
 > **This repository reproduces no text, table or figure from the standard.** IEC standards are
 > copyrighted and sold. If you claim standards compliance, hold your own copy from an authorised
-> distributor — the constants here are used as engineering facts, not as a substitute for it.
+> distributor and check the constants against it.
 >
 > **2. Field validation: none.** Every number in this repository was produced from synthetic
 > data. No measurement from a real transformer has ever entered it. See
@@ -218,7 +219,7 @@ channel combined is ±40 % of winding height; two probes inside the winding give
    from the standard's.
 3. **One synthetic unit.** A single illustrative ONAF-scale parameter set. No unit-to-unit
    spread, no cooling-class variation beyond a constants swap, no ageing.
-4. **IEC text is mirror-sourced and unverified** (see the banner above).
+4. **Cooling-class constants are unverified against the standard** (see the banner above).
 5. **Corruption magnitudes are plausible instrument bounds, not measured values.** Drift, spike
    rate, CT gain error and calibration bias were chosen as engineering estimates.
 6. **The uncertainty band covers parameter error only.** It excludes model structural error and

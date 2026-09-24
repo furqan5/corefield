@@ -41,7 +41,8 @@ def build_parser() -> argparse.ArgumentParser:
         prog="corefield",
         description=(
             "Transformer hot-spot estimation from load, ambient and top-oil telemetry. "
-            "IEC provenance UNVERIFIED; no field validation exists. See README."
+            "Cooling-class constants UNVERIFIED against IEC 60076-7; no field "
+            "validation exists. See README."
         ),
     )
     parser.add_argument(

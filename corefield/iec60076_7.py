@@ -15,17 +15,14 @@
 """Two-exponential transformer thermal model, IEC 60076-7 structure.
 
 ============================================================================
-IEC PROVENANCE
+PROVENANCE -- NO STANDARDS-CONFORMITY CLAIM
 
-The two-exponential structure and the ONAF constants in this module were
-checked against the published text of IEC 60076-7:2018 Edition 2.0 on
-25 Aug 2026 and MATCH IT: all five cooling-class constants, both tabulated
-time constants, and the assignment of each time constant to its own gradient
-branch. The engineering question -- are these numbers right -- is closed.
+(a, equation structure) The three state equations below match eqs. (20)-(23)
+of M. A. Gonzalez-Cagigal, J. A. Rosendo-Macias and A. Gomez-Exposito, "Parameter Estimation for Hot-spot Thermal Model of Power Transformers Using Unscented Kalman Filters", J. Mod. Power Syst. Clean Energy 11(2), 634-642, 2023, doi:10.35833/MPCE.2022.000439 (open access, CC BY 4.0), which states them as the IEC 60076-7:2018 model. Checked 24 Sep 2026.
 
-The licensing question is not, and is separate. IEC standards are copyrighted
-and sold. This repository reproduces no text, table or figure from the
-standard and treats the constants as engineering facts. Anyone using this
+(b, constants) The cooling-class constants are engineering assumptions,
+UNVERIFIED against the standard. IEC standards are copyrighted and sold. This
+repository reproduces no text, table or figure from the standard. Anyone using this
 software where standards compliance is claimed must hold their own copy from
 an authorised distributor, and CoreField's own client-facing work should not
 proceed until it does.
@@ -130,9 +127,8 @@ Solver = Literal["rk4", "euler"]
 class CoolingConstants:
     """Empirical exponents and time-constant multipliers for one cooling class.
 
-    All dimensionless. See the provenance banner at module top: the values
-    have been checked against the standard's published text and match; the
-    licensing requirement on the user is separate and still stands.
+    All dimensionless. The constants are engineering assumptions, UNVERIFIED
+    against the standard; see the provenance banner at module top.
 
     Attributes
     ----------
