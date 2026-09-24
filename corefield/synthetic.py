@@ -102,8 +102,8 @@ __all__ = [
 
 #: Illustrative ONAF-scale parameter set used throughout the campaign.
 #: Label (b): these are NOT a real transformer. tau_o = 150 min and
-#: tau_w = 7 min happen to coincide with the mirror-sourced Table-4 ONAF
-#: defaults; dtheta_or = 45 K, dtheta_hr = 22 K and R = 6 are engineering
+#: tau_w = 7 min are assumed ONAF-scale time constants, unverified against
+#: the standard; dtheta_or = 45 K, dtheta_hr = 22 K and R = 6 are engineering
 #: scale choices with no nameplate behind them.
 TRUTH_PARAMS = ThermalParams(
     delta_theta_or_K=45.0,

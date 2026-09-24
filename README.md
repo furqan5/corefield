@@ -20,14 +20,16 @@ and an external logger cannot replace the winding references needed for identifi
 
 > ## ⚠ TWO THINGS TO READ BEFORE ANYTHING ELSE
 >
-> **1. IEC 60076-7 provenance: MIRROR-SOURCED, UNVERIFIED against a licensed copy.**
-> The 25 Aug 2026 mirror check did not close the licensed-source verification gate.
-> Numerical self-consistency checks do not establish standards compliance or physical validity.
-> The settled ONAF constants remain unchanged.
+> **1. Provenance: no standards-conformity claim.** The equation structure is the two-exponential
+> IEC loading-guide model as written out in the peer-reviewed, open-access paper by
+> González-Cagigal, Rosendo-Macías and Gómez-Expósito, *J. Mod. Power Syst. Clean Energy*
+> 11(2):634–642, 2023, eqs. (20)–(23). The cooling-class constants are engineering assumptions,
+> UNVERIFIED against the standard itself. Numerical self-consistency checks do not establish
+> standards compliance or physical validity. The settled ONAF constants remain unchanged.
 >
 > **This repository reproduces no text, table or figure from the standard.** IEC standards are
 > copyrighted and sold. If you claim standards compliance, hold your own copy from an authorised
-> distributor — the constants here are used as engineering facts, not as a substitute for it.
+> distributor and check the constants against it.
 >
 > **2. Evidence is limited.** Synthetic tests, a qualified archived ODAF-data evaluation, and an
 > exploratory reanalysis of a published ONAF experiment are different evidence types. None
@@ -310,7 +312,7 @@ See [validation scope and claim corrections](docs/validation_scope.md) before re
    from the standard's.
 3. **One synthetic unit.** A single illustrative ONAF-scale parameter set. No unit-to-unit
    spread, no cooling-class variation beyond a constants swap, no ageing.
-4. **IEC text is mirror-sourced and unverified** (see the banner above).
+4. **Cooling-class constants are unverified against the standard** (see the banner above).
 5. **Corruption magnitudes are plausible instrument bounds, not measured values.** Drift, spike
    rate, CT gain error and calibration bias were chosen as engineering estimates.
 6. **The uncertainty band covers parameter error only.** It excludes model structural error and

@@ -17,7 +17,7 @@
 
 The most important tests here are the ones about PROVENANCE. The limits
 decide the temperature at which this software tells an operator it is safe
-to overload a transformer, and this repository's IEC text is unverified. A
+to overload a transformer, and this repository's constants are unverified. A
 remembered number at that point in the product would be the single worst
 defect the package could ship, so it is made structurally impossible.
 """

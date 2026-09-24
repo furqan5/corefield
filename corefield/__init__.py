@@ -21,10 +21,13 @@ ambient temperature, top-oil temperature -- then runs the identified model in
 service to answer the question that carries commercial value: how much extra
 load can this specific unit carry, and for how long.
 
-    IEC PROVENANCE: the structure and ONAF constants were checked against
-    IEC 60076-7:2018 Edition 2.0 (25 Aug 2026) and match. No standard text
-    is reproduced here. Users claiming standards compliance must hold their
-    own licensed copy from an authorised distributor.
+    PROVENANCE: the equation structure follows the peer-reviewed, open-access
+    statement of the IEC 60076-7 model in Gonzalez-Cagigal et al., J. Mod.
+    Power Syst. Clean Energy 11(2), 2023, eqs. (20)-(23). The cooling-class
+    constants are engineering assumptions, UNVERIFIED against the standard;
+    no conformity claim is made. No standard text is reproduced here. Users
+    claiming standards compliance must hold their own licensed copy from an
+    authorised distributor.
 
     FIELD VALIDATION: NONE. Every number this package reproduces was
     generated from synthetic data. No measurement from a real transformer

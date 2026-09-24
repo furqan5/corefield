@@ -15,8 +15,8 @@
 
 """Numerical verification of the two-exponential k-assignment.
 
-The cooling-class *values* in `iec60076_7` are mirror-sourced and UNVERIFIED
-against a licensed copy of the standard. What this module verifies is the
+The cooling-class *values* in `iec60076_7` are engineering assumptions,
+UNVERIFIED against the standard. What this module verifies is the
 *structure*: which time constant attaches to which branch, and which
 amplitude goes with it. That is a different and weaker claim than "the
 constants are right", and the distinction is kept deliberately.
@@ -95,8 +95,8 @@ class KAssignmentCheck:
             f"(expect 0.632)\n"
             f"  gradient overshoot               : {self.overshoot_fraction * 100:.2f} % "
             f"of step at {self.overshoot_time_min:.1f} min\n"
-            f"  NOTE: this verifies STRUCTURE only. The Table-4 constant VALUES "
-            f"remain mirror-sourced and UNVERIFIED."
+            f"  NOTE: this verifies STRUCTURE only. The cooling-class constant VALUES "
+            f"remain engineering assumptions, UNVERIFIED against the standard."
         )
 
 

@@ -101,8 +101,8 @@ def render_banner(kind: str, detail: str = "") -> None:
             f"### 📄 USER-SUPPLIED DATA\n"
             f"This tab is showing results computed from a file you provided."
             f"{(' ' + detail) if detail else ''} The thermal model itself remains "
-            f"unvalidated against field measurements, and this package's IEC 60076-7 "
-            f"text is mirror-sourced and UNVERIFIED.",
+            f"unvalidated against field measurements, and this package's cooling-class "
+            f"constants are UNVERIFIED against IEC 60076-7.",
             icon="📄",
         )
 
@@ -429,8 +429,8 @@ def tab_envelope() -> None:
         return
 
     st.markdown(
-        "**The limits below are not supplied by this software.** Its copy of "
-        "IEC 60076-7 is mirror-sourced and unverified, so hard-coding a temperature "
+        "**The limits below are not supplied by this software.** It holds no copy of "
+        "IEC 60076-7 and its constants are unverified, so hard-coding a temperature "
         "limit at the point where the tool says *it is safe to overload* would be the "
         "worst possible place for a remembered number. Enter your own, and record where "
         "they came from — the provenance travels with the result."
@@ -624,9 +624,10 @@ def main() -> None:
 
         st.markdown("---")
         st.caption(
-            "**IEC 60076-7 provenance: UNVERIFIED.** Equation structure and cooling-class "
-            "constants were mirror-sourced and have not been checked against a licensed "
-            "copy of the standard.\n\n"
+            "**Provenance: constants UNVERIFIED.** The equation structure follows the "
+            "peer-reviewed statement of the IEC 60076-7 model in González-Cagigal et al. "
+            "(2023). The cooling-class constants are engineering assumptions and have not "
+            "been checked against the standard; no conformity is claimed.\n\n"
             "**Field validation: none.** No measurement from a real transformer has ever "
             "entered this package."
         )

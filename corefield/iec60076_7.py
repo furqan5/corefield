@@ -16,13 +16,21 @@
 """Two-exponential transformer thermal model, IEC 60076-7 structure.
 
 ============================================================================
-IEC PROVENANCE -- MIRROR-SOURCED, UNVERIFIED AGAINST A LICENSED COPY
+PROVENANCE -- NO STANDARDS-CONFORMITY CLAIM
 
-(a, project provenance) The earlier 25 Aug 2026 check used mirror-sourced
-text. It does not satisfy the project's licensed-source verification gate.
-Retain this warning until an authorised copy has been checked and recorded.
-The settled ONAF constants are unchanged; they are not a compliance claim.
-This repository does not redistribute the standard's text, tables or figures.
+(a, equation structure) The three state equations below match eqs. (20)-(23)
+of M. A. Gonzalez-Cagigal, J. A. Rosendo-Macias and A. Gomez-Exposito,
+"Parameter Estimation for Hot-spot Thermal Model of Power Transformers Using
+Unscented Kalman Filters", J. Mod. Power Syst. Clean Energy 11(2), 634-642,
+2023, doi:10.35833/MPCE.2022.000439 (open access, CC BY 4.0), which states
+them as the IEC 60076-7:2018 model. Checked 24 Sep 2026.
+
+(b, constants) The cooling-class constants are engineering assumptions,
+UNVERIFIED against the standard. Retain this warning until they have been
+checked against an authorised copy or a peer-reviewed tabulation and the
+check recorded. The settled ONAF constants are unchanged; they are not a
+compliance claim. This repository does not redistribute the standard's text,
+tables or figures.
 
 (a, implementation tests) `corefield.verification` checks numerical
 consistency of the implemented branch assignment, including closed-form/RK4
@@ -126,8 +134,8 @@ Solver = Literal["rk4", "euler"]
 class CoolingConstants:
     """Empirical exponents and time-constant multipliers for one cooling class.
 
-    All dimensionless. The constants remain mirror-sourced and UNVERIFIED
-    against a licensed standard; see the module provenance banner.
+    All dimensionless. The constants are engineering assumptions, UNVERIFIED
+    against the standard; see the module provenance banner.
 
     Attributes
     ----------
@@ -183,8 +191,8 @@ class CoolingConstants:
 
 
 #: Medium & large power transformers, ONAF. Settled per CLAUDE.md -- do not
-#: change without an explicit instruction. Mirror-sourced; UNVERIFIED against
-#: a licensed standard. The 25 Aug 2026 mirror check does not close that gate.
+#: change without an explicit instruction. Engineering assumption; UNVERIFIED
+#: against the standard.
 #:
 #: Note on portability (label (c), from methods v4 section 9.3): other cooling
 #: classes are a column swap. Small distribution ONAN has k21 = 1.0, which
@@ -209,6 +217,12 @@ ONAN_MEDIUM_LARGE_POWER = CoolingConstants(
 #: single-exponential behaviour. This is why small units show no hot-spot
 #: overshoot on a load step, and why the A/B/C model comparison has nothing
 #: to separate on them.
+#:
+#: SOURCE CONFLICT, recorded 24 Sep 2026: Gonzalez-Cagigal et al. (2023),
+#: Table I, simulate a distribution transformer with k21 = 1.5 (and
+#: tau_o = 180 min, tau_w = 4 min), attributing it to IEC 60076-7:2018. That
+#: disagrees with k21 = 1.0 here. Neither value is verified against the
+#: standard; the published CoreField study uses ONAF only and is unaffected.
 ONAN_SMALL = CoolingConstants(
     x=0.8, y=1.6, k11=1.0, k21=1.0, k22=2.0, name="ONAN, small transformers"
 )

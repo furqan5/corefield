@@ -49,8 +49,10 @@ pp. 111–112. The guides compared in that paper are its cited historical editio
 9. **(c, interpretation)** The current winding-handover heuristic is an anomaly flag, not
    a verified physical classifier. A maximum of smooth winding curves need not have its
    particular local-exponent pattern.
-10. **(a, project provenance)** IEC text remains mirror-sourced and UNVERIFIED against a
-    licensed copy. Numerical consistency checks do not close that source-verification gate.
+10. **(a, project provenance)** The equation structure matches the peer-reviewed,
+    open-access statement in González-Cagigal et al. (2023), eqs. (20)–(23). The
+    cooling-class constants remain UNVERIFIED against the standard. Numerical consistency
+    checks do not close that source-verification gate.
 
 ## What changed in the software in this review
 

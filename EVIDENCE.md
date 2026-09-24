@@ -39,10 +39,10 @@ The README quotes the reproduced value, not the published one.
 
 | # | Claim | Label | Where verified |
 |---|---|---|---|
-| 9 | The model's winding parameters require information not present in top-oil alone | **(a), model structure** | Winding parameters do not enter the oil equation. Claims about precise IEC requirements remain UNVERIFIED against a licensed copy |
-| 10 | The implementation retains x=0.8, y=1.3, k11=0.5, k21=2.0, k22=2.0 for its ONAF example | **(a), implementation** | `test_physics.py::test_settled_constants_are_unchanged`; mirror-sourced, not licensed-source verification |
+| 9 | The model's winding parameters require information not present in top-oil alone | **(a), model structure** | Winding parameters do not enter the oil equation. Equation structure checked against González-Cagigal et al. (2023) eqs. (20)–(23); claims about precise IEC requirements remain UNVERIFIED against the standard |
+| 10 | The implementation retains x=0.8, y=1.3, k11=0.5, k21=2.0, k22=2.0 for its ONAF example | **(a), implementation** | `test_physics.py::test_settled_constants_are_unchanged`; engineering assumptions, not verified against the standard |
 | 10b | The implemented OD constants set k21=1, removing the slow gradient branch | **(a), model algebra** | `OD_MEDIUM_LARGE_POWER`; does not validate transfer between cooling classes |
-| 10c | The staged estimator does not share τ_w by default | **(a), implementation choice** | `staged.SHARED_BY_DEFAULT`; the cited tabulated priors remain mirror-sourced, not measurements |
+| 10c | The staged estimator does not share τ_w by default | **(a), implementation choice** | `staged.SHARED_BY_DEFAULT`; the cited tabulated priors remain unverified assumptions, not measurements |
 | 11 | The implemented branch assignment passes numerical consistency checks | **(a), implementation only** | `test_physics.py::test_k_assignment_verified`; self-consistency cannot verify the standard or a physical transformer |
 | 12 | Closed-form vs RK4 agreement: 1.097×10⁻⁷ K | **(a)** | same |
 | 13 | Oil reaches 63.2 % of its step at t = k11·τ_o | **(a)** | same |
@@ -264,7 +264,7 @@ a licence obligation.
 Every claim in the README's Limitations section is **(a)** — each is a statement that something
 has *not* been done, verifiable by inspection of this repository. Specifically: one field
 validation on one unit below nameplate and otherwise synthetic data, one synthetic unit, Model C
-structure-matched to its own truth, IEC text unverified, corruption magnitudes estimated,
+structure-matched to its own truth, cooling-class constants unverified, corruption magnitudes estimated,
 uncertainty band parameter-only, WTI bias tested only as a constant offset, and the observability
 model simplified.
 

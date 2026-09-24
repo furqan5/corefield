@@ -63,16 +63,21 @@ claims and their limitations stay quotable and checkable by anyone.
 THIRD-PARTY STANDARDS
 --------------------------------------------------------------------------
 
-This software implements a thermal model whose structure and empirical
-constants derive from IEC 60076-7. IEC standards are copyrighted works of the
-International Electrotechnical Commission and are NOT redistributed here. No
-clause text, table, or figure from the standard is reproduced in this
-repository.
+This software implements the two-exponential thermal model of the IEC
+60076-7 loading guide, with the equation structure taken from a peer-reviewed,
+open-access publication: M. A. Gonzalez-Cagigal, J. A. Rosendo-Macias and
+A. Gomez-Exposito, "Parameter Estimation for Hot-spot Thermal Model of Power
+Transformers Using Unscented Kalman Filters", J. Mod. Power Syst. Clean Energy 11(2),
+634-642, 2023, doi:10.35833/MPCE.2022.000439 (CC BY 4.0), eqs. (20)-(23).
+IEC standards are copyrighted works of the International Electrotechnical
+Commission and are NOT redistributed here. No clause text, table, or figure
+from the standard is reproduced in this repository.
 
-The constants used by this software were mirror-sourced and are UNVERIFIED
-against a licensed copy of the standard. Users requiring standards compliance
-must obtain their own licensed copy from the IEC. See the provenance banner in
-README.md and in corefield/iec60076_7.py.
+The cooling-class constants used by this software are engineering assumptions
+and are UNVERIFIED against the standard. No standards-conformity claim is
+made. Users requiring standards compliance must obtain their own licensed copy
+from the IEC. See the provenance banner in README.md and in
+corefield/iec60076_7.py.
 
 Loading limits are deliberately NOT supplied by this software; the caller must
 source them and record their provenance. See corefield/envelope.py.

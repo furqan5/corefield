@@ -21,8 +21,8 @@ number trustworthy.
 THE LIMITS ARE NOT IN THIS FILE, AND THAT IS DELIBERATE
 -------------------------------------------------------
 IEC 60076-7 states loading limits for each loading type and transformer
-category. This repository's copy of the standard is mirror-sourced and
-UNVERIFIED, so hard-coding those numbers from memory would put an
+category. This repository holds no copy of the standard and its constants
+are UNVERIFIED against it, so hard-coding those numbers from memory would put an
 unverifiable temperature limit at the exact point where the software tells
 an operator it is safe to overload a transformer. That is the worst possible
 place for a remembered number.
@@ -102,7 +102,7 @@ class LoadingLimits:
         the clause of a licensed copy of the standard, a utility loading
         policy document, or a manufacturer's letter.
 
-        This package's copy of IEC 60076-7 is mirror-sourced and UNVERIFIED.
+        This package holds no copy of IEC 60076-7 and ships no limits.
         Take these values from a licensed copy of the standard, or from your
         own asset policy -- not from this software, and not from memory.
 
@@ -141,8 +141,8 @@ class LoadingLimits:
                 f"source = {self.source!r} is not a usable provenance record. State where "
                 f"these limits came from, specifically enough that a reviewer could check "
                 f"it -- a licensed copy of the standard, a utility loading policy, or a "
-                f"manufacturer's letter. This package's own IEC text is UNVERIFIED and "
-                f"must not be cited as the source."
+                f"manufacturer's letter. This package holds no copy of the standard and "
+                f"its constants are UNVERIFIED; it must not be cited as the source."
             )
 
 
@@ -158,9 +158,9 @@ def iec_loading_limits(*_args: object, **_kwargs: object) -> LoadingLimits:
         "CoreField does not ship IEC 60076-7 loading limits.\n"
         "\n"
         "The limits decide the temperature at which this software tells an operator it "
-        "is safe to overload a transformer. This repository's copy of IEC 60076-7 was "
-        "mirror-sourced and is UNVERIFIED, so supplying those numbers here would put an "
-        "unchecked value at the single most consequential point in the product.\n"
+        "is safe to overload a transformer. This repository holds no copy of IEC 60076-7 "
+        "and its constants are UNVERIFIED against it, so supplying those numbers here would "
+        "put an unchecked value at the single most consequential point in the product.\n"
         "\n"
         "Construct LoadingLimits yourself, from a licensed copy of the standard for your "
         "loading type and transformer category, or from your own asset-management policy:\n"

@@ -1,6 +1,24 @@
 # CoreField shared development log
 # Existing entries are historical records; append corrections rather than erasing them.
 
+[2026-09-24 +05:00] Agent: Claude (Claude Code), on the founder's instruction
+Task: Re-source the model provenance statements before journal submission.
+Completed:
+  - The equation structure is now referenced to a peer-reviewed, open-access source:
+    Gonzalez-Cagigal, Rosendo-Macias and Gomez-Exposito, J. Mod. Power Syst. Clean Energy
+    11(2):634-642, 2023, doi:10.35833/MPCE.2022.000439 (CC BY 4.0), eqs. (20)-(23),
+    checked line by line against corefield/iec60076_7.py on 24 Sep 2026: they match.
+  - The earlier informal-source wording was removed from README, NOTICE, EVIDENCE.md,
+    docs/validation_scope.md, the package docstrings, the CLI description and the app.
+    The cooling-class constants are now described as engineering assumptions, UNVERIFIED
+    against the standard. That status and every no-conformity statement are retained.
+  - corefield/__init__.py claimed the ONAF constants "were checked against IEC 60076-7:2018
+    ... and match". That overstated the check and was replaced.
+  - Recorded a source conflict: Gonzalez-Cagigal et al. Table I simulate a distribution
+    transformer with k21 = 1.5; ONAN_SMALL uses 1.0. Not resolved; ONAF study unaffected.
+Decisions:
+  - No constant, equation, integrator or numerical result changed.
+
 [2026-08-28 03:00 +05:00] Agent: Codex
 Task: Cooling-class scope, overload provenance, and honest application positioning.
 Completed:
