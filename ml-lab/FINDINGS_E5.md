@@ -171,7 +171,7 @@ demonstrated win", **not** "proof that no win is possible". The margins (PINN RM
 1.00 pu, plain NN 44.56 K) are wide enough to justify **rejecting these candidates as an interim
 engineering decision**, and that is all they justify.
 
-The production ban on neural networks in the engine is a **CLAUDE.md policy decision** that predates
+The production ban on neural networks in the engine is a **project-brief policy decision** that predates
 this lab and does not depend on it. This lab has not produced evidence to overturn it, and has not
 produced confirmatory evidence to support it either.
 

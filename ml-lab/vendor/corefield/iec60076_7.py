@@ -181,7 +181,7 @@ class CoolingConstants:
             raise ValueError(f"k21 must be >= 1.0, got {self.k21!r}")
 
 
-#: Medium & large power transformers, ONAF. Settled per CLAUDE.md -- do not
+#: Medium & large power transformers, ONAF. Settled in the project brief -- do not
 #: change without an explicit instruction. Mirror-sourced; UNVERIFIED against
 #: a licensed standard. The 25 Aug 2026 mirror check does not close that gate.
 #:

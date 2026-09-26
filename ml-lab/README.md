@@ -65,7 +65,7 @@ Trained on 0.60–0.95 pu, evaluated outside it. Mean signed peak error:
 The defensible statement is **"no ML method has validly demonstrated a win over classical NLS
 anywhere in this harness"** — no demonstrated win, *not* proof that no win is possible. The margins
 are wide enough to **reject these candidates as an interim engineering decision** and no more. The
-production ban on neural networks is a CLAUDE.md policy decision that predates this lab and does not
+production ban on neural networks is a project-brief policy decision that predates this lab and does not
 rest on it. See `FINDINGS_E5.md` §4.
 
 ### A conformal band calibrated in range is silently wrong above nameplate
