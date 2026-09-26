@@ -293,7 +293,7 @@ def test_vector_units_are_seconds_not_minutes():
 
 
 def test_settled_constants_are_unchanged():
-    """ONAF constants are settled per CLAUDE.md. Changing one must break a test."""
+    """ONAF constants are settled project inputs. Changing one must break a test."""
     c = ONAF_MEDIUM_LARGE_POWER
     assert (c.x, c.y, c.k11, c.k21, c.k22) == (0.8, 1.3, 0.5, 2.0, 2.0)
 

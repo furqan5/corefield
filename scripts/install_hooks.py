@@ -80,7 +80,7 @@ if [ -n "$HITS" ]; then
   echo "COMMIT BLOCKED - confidential terms found in staged content:"
   echo "$HITS"
   echo ""
-  echo "Per CLAUDE.md, the pilot host's employer, title and identifying detail"
+  echo "Project rule: the pilot host's employer, title and identifying detail"
   echo "must never appear in this repository, in commit messages, or in issues."
   echo "Remove the detail, or refer only to 'the pilot host'."
   echo ""

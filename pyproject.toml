@@ -22,7 +22,7 @@ classifiers = [
 ]
 
 # Deliberately minimal and CPU-only. No torch, no GPU, no paid services.
-# The production engine is classical nonlinear least squares; see CLAUDE.md
+# The production engine is classical nonlinear least squares; see WITHDRAWN.md
 # for why a neural network is not a dependency here.
 dependencies = [
     "numpy>=1.26",
