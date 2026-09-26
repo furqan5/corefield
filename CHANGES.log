@@ -33,7 +33,7 @@ Completed:
   - Added docs/validation_scope.md with source provenance and remaining validation gates.
   - Updated private application, correspondence and plain-language guidance; older drafts
     are preserved locally. No email or application was sent. No paper/deck ZIP was approved.
-  - Added AGENTS.md to the same private-instruction exclusion as CLAUDE.md.
+  - Added AGENTS.md to the same private-instruction exclusion as the project brief.
 Verification:
   - Focused CRLB/envelope run: 79 passed, 1 slow test deselected.
   - Full suite: 245 passed in 22.84 s, including slow tests and the app.
@@ -110,7 +110,7 @@ Documentation:
   - paper/main.tex: related work now engages the article instead of talking around it.
 Verification:
   - Full suite: 248 passed in 60.65 s. 248 collected, none skipped.
-  - CORRECTION: CLAUDE.md claimed 275 passing tests. That figure does not reproduce and
+  - CORRECTION: the project brief claimed 275 passing tests. That figure does not reproduce and
     contradicts this log's own 2026-08-28 entry of 245. Corrected to the measured 248
     (245 + 3 added today). REPRODUCTION.md's stale "91 tests" also corrected.
   - openpyxl installed into the local .venv; the private Excel scripts could not run.
@@ -162,7 +162,7 @@ Defect found and fixed:
   - The packaged zip's SOURCE_REVISION named a commit on a branch that was
     deleted and never pushed. To be rebuilt against a pushed commit.
 Correction:
-  - CLAUDE.md quoted Model A's worst-case peak error as +6.18 K. The repository
+  - The project brief quoted Model A's worst-case peak error as +6.18 K. The repository
     reproduces +6.17 K and EVIDENCE.md already documented the difference.
     Corrected to the reproduced value.
 Verification:
@@ -194,7 +194,7 @@ What it explicitly does NOT change:
   - It is NOT permission to report the derived quantitative result. That is a
     separate permission, has not been asked for, and still gates any external
     use of the 1.55 K. Acknowledgement consent is not reporting permission, and
-    CLAUDE.md and the DVP pack now say so in terms.
+    the project brief and the DVP pack now say so in terms.
   - No other condition moves: one unit, below nameplate, one parameter held,
     two of three cooling stages identified.
 Also corrected:

@@ -114,7 +114,7 @@ The README quotes the reproduced value, not the published one.
 | 54 | Kelvin input is detected and rejected or converted | **(a)** | `test_physics.py::test_kelvin_ambient_is_rejected`, `test_ingest.py::test_kelvin_temperatures_are_converted` |
 | 55 | Contains no neural networks | **(a)** | No torch dependency in `pyproject.toml`; grep the tree |
 | 56 | The fast integrator is an exact restatement of the RK4 loop | **(a)** | `test_physics.py::test_fast_integrator_matches_reference_loop` (agrees to <1e-10 K) |
-| 57 | Runs CPU-only in well under 2 GB | **(a)** | Measured 24 Aug 2026: **136.6 MiB process RSS**, 52.3 MiB peak Python allocation, running the day-C comparison plus three corruption scenarios. Against the 2 GB budget in CLAUDE.md that is a factor of ~15 margin |
+| 57 | Runs CPU-only in well under 2 GB | **(a)** | Measured 24 Aug 2026: **136.6 MiB process RSS**, 52.3 MiB peak Python allocation, running the day-C comparison plus three corruption scenarios. Against the 2 GB budget in the project brief that is a factor of ~15 margin |
 
 ## First field validation
 

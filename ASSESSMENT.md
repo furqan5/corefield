@@ -3,7 +3,7 @@
 **Date:** 24 Aug 2026 · **Requested:** viability of extending 0-D → 2D → 3D by inverse PINN;
 novelty check; dataset and geometry sourcing.
 
-Labels per CLAUDE.md: **(a)** verified · **(b)** engineering estimate with assumptions ·
+Evidence labels: **(a)** verified · **(b)** engineering estimate with assumptions ·
 **(c)** inference/judgement.
 
 ---

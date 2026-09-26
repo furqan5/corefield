@@ -112,8 +112,8 @@ day-C values (RMSE 2.59, worst 5.76, mean peak +5.76) all reproduce exactly.
 **Impact: none.** 0.16 % on a number whose role is "Model A reads about 6 K hot at
 1.30 pu". Well inside the ±5 % regression tolerance.
 
-**Note:** `CLAUDE.md`'s headline table quotes +6.18. If you want that file to match
-what the code now produces, it should read +6.17.
+**Note:** the project brief's headline table quotes +6.18. The code now produces +6.17,
+and that is the figure to quote.
 
 ---
 
@@ -135,7 +135,7 @@ squares, logged as prediction miss P18 — is unaffected.
 
 ## The CRLB acceptance criterion — corrected
 
-`CLAUDE.md` and the project brief both state: *"The published campaign recovered all
+The project brief states: *"The published campaign recovered all
 four at 0.99–1.02× CRLB. That is the acceptance criterion."*
 
 **No four-parameter efficiency table exists in any legacy report.** The 0.99–1.02×

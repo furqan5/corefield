@@ -74,7 +74,7 @@ answer. See [ASSESSMENT.md](ASSESSMENT.md) for the full analysis and the prior-a
 
 ### Standing rule
 
-Per `CLAUDE.md`: **no neural networks, PINNs, or deep learning in this repository.** The
+Per the project brief: **no neural networks, PINNs, or deep learning in this repository.** The
 production engine is classical nonlinear least squares, and that is a measured result — under
 structural mismatch the alternatives read the hot spot several kelvin high at overload, which
 triggers derating exactly when capacity is worth the most.
